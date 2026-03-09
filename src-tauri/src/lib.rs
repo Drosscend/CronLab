@@ -9,6 +9,7 @@ use config::AppConfig;
 use scheduler::{start_scheduler, SchedulerState};
 use std::sync::Arc;
 use tauri::{
+    image::Image,
     menu::{MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, WindowEvent,
@@ -56,7 +57,15 @@ pub fn run() {
                 config.tasks.iter().filter(|t| t.enabled).count()
             };
 
+            let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))?;
+
+            // Set window icon (for taskbar in dev mode)
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_icon(icon.clone());
+            }
+
             let _tray = TrayIconBuilder::new()
+                .icon(icon)
                 .tooltip(&format!("CronLab - {} tâche(s) active(s)", active_count))
                 .menu(&menu)
                 .show_menu_on_left_click(false)

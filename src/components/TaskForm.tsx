@@ -22,6 +22,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type { Task, TaskInput, Schedule } from "../lib/types";
 import { useI18n } from "../i18n";
 import { TaskAdvanced } from "./TaskAdvanced";
+import { TimePicker } from "./TimePicker";
 
 const useStyles = makeStyles({
   form: {
@@ -227,11 +228,7 @@ export function TaskForm({
               {(scheduleType === "daily" || scheduleType === "weekly") && (
                 <div className={styles.field}>
                   <Label>{t("schedule.time")}</Label>
-                  <Input
-                    type="time"
-                    value={time}
-                    onChange={(_, data) => setTime(data.value)}
-                  />
+                  <TimePicker value={time} onChange={setTime} />
                 </div>
               )}
 
