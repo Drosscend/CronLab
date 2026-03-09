@@ -1,5 +1,4 @@
 import {
-  Badge,
   Button,
   Menu,
   MenuItem,
@@ -21,6 +20,7 @@ import {
 import type { Task } from "../lib/types";
 import { useI18n } from "../i18n";
 import { useCountdown } from "../hooks/useCountdown";
+import { StatusBadge } from "./StatusBadge";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getExecutions } from "../lib/tauri";
 
@@ -65,22 +65,6 @@ interface TaskRowProps {
   onRunNow: (id: string) => void;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const { t } = useI18n();
-  switch (status) {
-    case "success":
-      return <Badge appearance="tint" color="success" size="small">{t("status.success")}</Badge>;
-    case "failed":
-      return <Badge appearance="tint" color="danger" size="small">{t("status.failed")}</Badge>;
-    case "timeout":
-      return <Badge appearance="tint" color="warning" size="small">{t("status.timeout")}</Badge>;
-    case "running":
-      return <Badge appearance="tint" color="informative" size="small">{t("status.running")}</Badge>;
-    default:
-      return <Badge appearance="outline" color="subtle" size="small">{t("status.never")}</Badge>;
-  }
-}
-
 export function TaskRow({
   task,
   onToggle,
@@ -91,7 +75,7 @@ export function TaskRow({
 }: TaskRowProps) {
   const styles = useStyles();
   const { t } = useI18n();
-  const { label: countdown } = useCountdown(task.id, task.enabled, t);
+  const { label: countdown } = useCountdown(task.id, task.enabled, t, task.updatedAt);
   const [lastStatus, setLastStatus] = useState<string>("never");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

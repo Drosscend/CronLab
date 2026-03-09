@@ -9,7 +9,8 @@ interface CountdownResult {
 export function useCountdown(
   taskId: string,
   enabled: boolean,
-  t: (key: string, params?: Record<string, string | number>) => string
+  t: (key: string, params?: Record<string, string | number>) => string,
+  updatedAt?: string
 ): CountdownResult {
   const [nextRun, setNextRun] = useState<string | null>(null);
   const [label, setLabel] = useState("");
@@ -39,7 +40,7 @@ export function useCountdown(
       cancelled = true;
       clearInterval(fetchInterval);
     };
-  }, [taskId, enabled, t]);
+  }, [taskId, enabled, t, updatedAt]);
 
   useEffect(() => {
     if (!enabled) {
