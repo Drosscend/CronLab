@@ -3,13 +3,18 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+/// Thread-safe configuration manager responsible for loading, saving, and
+/// locating all persisted data under `~/.cronlab/`.
 pub struct AppConfig {
+    /// The in-memory configuration, protected by a Mutex for concurrent access.
     pub config: Mutex<Config>,
     config_path: PathBuf,
     logs_dir: PathBuf,
 }
 
 impl AppConfig {
+    /// Initialize configuration by loading `~/.cronlab/config.json` (or creating
+    /// it with defaults) and ensuring the `logs/` subdirectory exists.
     pub fn new() -> Self {
         let base_dir = dirs::home_dir()
             .expect("Cannot find home directory")
@@ -39,6 +44,7 @@ impl AppConfig {
         }
     }
 
+    /// Persist the current in-memory configuration to disk as pretty-printed JSON.
     pub fn save(&self) -> Result<(), String> {
         let config = self.config.lock().map_err(|e| e.to_string())?;
         let content = serde_json::to_string_pretty(&*config).map_err(|e| e.to_string())?;
@@ -46,10 +52,13 @@ impl AppConfig {
         Ok(())
     }
 
+    /// Return the filesystem path for a task's execution log file.
     pub fn get_log_path(&self, task_id: &str) -> PathBuf {
         self.logs_dir.join(format!("{}.json", task_id))
     }
 
+    /// Load all execution records for a task from its JSON log file.
+    /// Returns an empty vector if the file does not exist or is unreadable.
     pub fn load_executions(&self, task_id: &str) -> Vec<Execution> {
         let path = self.get_log_path(task_id);
         if path.exists() {
@@ -60,6 +69,7 @@ impl AppConfig {
         }
     }
 
+    /// Write execution records back to the task's JSON log file.
     pub fn save_executions(&self, task_id: &str, executions: &[Execution]) -> Result<(), String> {
         let path = self.get_log_path(task_id);
         let content = serde_json::to_string_pretty(executions).map_err(|e| e.to_string())?;
@@ -67,6 +77,7 @@ impl AppConfig {
         Ok(())
     }
 
+    /// Delete the execution log file for a task. Silently ignores missing files.
     pub fn delete_log(&self, task_id: &str) {
         let path = self.get_log_path(task_id);
         let _ = fs::remove_file(path);

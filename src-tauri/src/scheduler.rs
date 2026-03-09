@@ -10,7 +10,10 @@ use std::thread;
 use std::time::Duration;
 use tauri::AppHandle;
 
+/// Tracks which schedule slots have already been triggered to prevent
+/// duplicate executions within the same scheduling window.
 pub struct SchedulerState {
+    /// Keys are `"{task_id}_{next_run_rfc3339}"`, values are trigger timestamps.
     pub last_triggered: Mutex<HashMap<String, String>>,
 }
 
@@ -22,6 +25,8 @@ impl SchedulerState {
     }
 }
 
+/// Spawn a background thread that checks all enabled tasks every 30 seconds
+/// and triggers execution for any task whose next run time is in the past.
 pub fn start_scheduler(app_handle: AppHandle, app_config: Arc<AppConfig>, scheduler_state: Arc<SchedulerState>) {
     thread::spawn(move || loop {
         thread::sleep(Duration::from_secs(30));
@@ -84,6 +89,8 @@ fn check_and_run_tasks(
     }
 }
 
+/// Compute the next scheduled run time for the given schedule, relative to now.
+/// Returns an RFC 3339 timestamp or `None` if the schedule is invalid.
 pub fn compute_next_run(schedule: &crate::models::Schedule) -> Option<String> {
     let now = Local::now();
 

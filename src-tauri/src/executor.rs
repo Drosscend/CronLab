@@ -7,6 +7,12 @@ use std::thread;
 use std::time::Duration;
 use tauri::AppHandle;
 
+/// Spawn a new thread that runs the given command as a child process.
+///
+/// The execution lifecycle is: create a "running" log entry, spawn the process,
+/// poll `try_wait()` every 500 ms until completion or timeout, capture
+/// stdout/stderr (capped at 10 KB each), persist the result, and send a
+/// desktop notification.
 pub fn execute_task(
     app_handle: AppHandle,
     app_config: Arc<AppConfig>,
