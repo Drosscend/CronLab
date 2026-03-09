@@ -37,7 +37,21 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Check if release already exists
+        id: check_release
+        shell: bash
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" &>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release ${{ steps.version.outputs.tag }} already exists, skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build Tauri app
+        if: steps.check_release.outputs.exists == 'false'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

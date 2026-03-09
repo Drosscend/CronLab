@@ -49,6 +49,24 @@ bunx tsc --noEmit    # type check
 4. Add TS interface in `src/lib/types.ts`
 5. Add invoke wrapper in `src/lib/tauri.ts`
 
+## Versioning & Release
+
+**IMPORTANT**: La version doit être incrémentée AVANT chaque push sur `main` qui contient des changements fonctionnels (features, fixes, refactors). Un push sur `main` déclenche automatiquement un build + release GitHub.
+
+La version est définie dans **3 fichiers** qui doivent rester synchronisés :
+- `package.json` → `"version"`
+- `src-tauri/tauri.conf.json` → `"version"`
+- `src-tauri/Cargo.toml` → `version`
+
+Utilise le script de bump pour les mettre à jour d'un coup :
+```bash
+bun run bump:patch   # 0.1.0 → 0.1.1 (bugfix)
+bun run bump:minor   # 0.1.0 → 0.2.0 (nouvelle feature)
+bun run bump:major   # 0.1.0 → 1.0.0 (breaking change)
+```
+
+Inclus le bump dans le même commit ou fais un commit dédié `chore: bump version to X.Y.Z` avant de push. Si la version n'est pas incrémentée, le workflow CI skip la release car le tag existe déjà.
+
 ## Don't
 
 - Don't use `npm`, `npx`, `yarn`, or `pnpm` — use `bun` / `bunx`

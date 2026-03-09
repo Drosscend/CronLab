@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "bump": "bash scripts/bump-version.sh",
+    "bump:patch": "bash scripts/bump-version.sh patch",
+    "bump:minor": "bash scripts/bump-version.sh minor",
+    "bump:major": "bash scripts/bump-version.sh major"
   },
   "dependencies": {
     "@fluentui/react-components": "^9.73.2",
