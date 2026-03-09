@@ -42,7 +42,6 @@ export function Header({ onNewTask, onOpenSettings }: HeaderProps) {
           appearance="outline"
           icon={<Add20Regular />}
           onClick={onNewTask}
-          size="small"
         >
           {t("task.new")}
         </Button>
@@ -51,7 +50,6 @@ export function Header({ onNewTask, onOpenSettings }: HeaderProps) {
         <Button
           icon={<Settings20Regular />}
           appearance="subtle"
-          size="small"
           aria-label={t("settings.title")}
           onClick={onOpenSettings}
         />

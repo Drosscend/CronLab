@@ -27,11 +27,15 @@ import { getExecutions } from "../lib/tauri";
 const useStyles = makeStyles({
   row: {
     display: "grid",
-    gridTemplateColumns: "1fr 110px 80px 60px 72px",
+    gridTemplateColumns: "1fr 120px 88px 60px 72px",
+    columnGap: tokens.spacingHorizontalM,
     alignItems: "center",
     padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalL}`,
     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
     fontSize: tokens.fontSizeBase300,
+    transitionProperty: "background-color",
+    transitionDuration: "0.1s",
+    transitionTimingFunction: "ease",
     "&:hover": {
       backgroundColor: tokens.colorNeutralBackground1Hover,
     },
@@ -52,7 +56,10 @@ const useStyles = makeStyles({
   actions: {
     display: "flex",
     alignItems: "center",
-    gap: "2px",
+    gap: tokens.spacingHorizontalXXS,
+  },
+  deleteItem: {
+    color: tokens.colorStatusDangerForeground1,
   },
 });
 
@@ -172,6 +179,7 @@ export function TaskRow({
                 {t("task.logs")}
               </MenuItem>
               <MenuItem
+                className={styles.deleteItem}
                 icon={<Delete20Regular />}
                 onClick={() => onDelete(task)}
               >

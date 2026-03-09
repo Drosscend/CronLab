@@ -11,6 +11,7 @@ import {
   Button,
   Text,
   makeStyles,
+  tokens,
 } from "@fluentui/react-components";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useTheme } from "./hooks/useTheme";
@@ -31,6 +32,7 @@ const useStyles = makeStyles({
     flexDirection: "column",
     height: "100vh",
     overflow: "hidden",
+    backgroundColor: tokens.colorNeutralBackground2,
   },
 });
 
@@ -131,6 +133,7 @@ function App() {
               onDelete={handleDelete}
               onViewLogs={handleViewLogs}
               onRunNow={runNow}
+              onNewTask={handleNewTask}
             />
           </div>
         )}

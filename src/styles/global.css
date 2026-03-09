@@ -23,15 +23,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Override Fluent UI dialog to remove excessive rounding on small windows */
+/* Dialog border-radius - compact app needs 8px (borderRadiusLarge) */
 .fui-DialogSurface {
-  border-radius: 7px !important;
+  border-radius: 8px !important;
 }
 
 /* Scrollbar styling - Windows 11 style */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -39,10 +39,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.3);
-  border-radius: 3px;
+  background: light-dark(rgba(0, 0, 0, 0.2), rgba(255, 255, 255, 0.2));
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.5);
+  background: light-dark(rgba(0, 0, 0, 0.35), rgba(255, 255, 255, 0.35));
 }

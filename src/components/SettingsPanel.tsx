@@ -1,7 +1,8 @@
 import {
   Button,
+  Dropdown,
   Label,
-  Select,
+  Option,
   SpinButton,
   Switch,
   Text,
@@ -19,13 +20,14 @@ const useStyles = makeStyles({
     flexDirection: "column",
     height: "100vh",
     overflow: "hidden",
+    backgroundColor: tokens.colorNeutralBackground2,
   },
   header: {
     display: "flex",
     alignItems: "center",
     gap: tokens.spacingHorizontalS,
     padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalL}`,
-    minHeight: "44px",
+    minHeight: "48px",
   },
   title: {
     fontSize: tokens.fontSizeBase400,
@@ -39,7 +41,7 @@ const useStyles = makeStyles({
   field: {
     display: "flex",
     flexDirection: "column",
-    gap: "4px",
+    gap: tokens.spacingVerticalXS,
     marginBottom: tokens.spacingVerticalM,
   },
   switchRow: {
@@ -50,6 +52,13 @@ const useStyles = makeStyles({
   },
   switchLabel: {
     fontSize: tokens.fontSizeBase300,
+  },
+  fieldSpaced: {
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalXS,
+    marginBottom: tokens.spacingVerticalM,
+    marginTop: tokens.spacingVerticalM,
   },
   footer: {
     display: "flex",
@@ -123,14 +132,14 @@ export function SettingsPanel({
       <div className={styles.content}>
         <div className={styles.field}>
           <Label size="small">{t("settings.language")}</Label>
-          <Select
-            value={language}
-            onChange={(_, data) => setLanguage(data.value as "fr" | "en")}
-            size="small"
+          <Dropdown
+            value={language === "fr" ? "Français" : "English"}
+            selectedOptions={[language]}
+            onOptionSelect={(_, data) => setLanguage(data.optionValue as "fr" | "en")}
           >
-            <option value="fr">Français</option>
-            <option value="en">English</option>
-          </Select>
+            <Option value="fr">Français</Option>
+            <Option value="en">English</Option>
+          </Dropdown>
         </div>
 
         <div className={styles.switchRow}>
@@ -157,12 +166,11 @@ export function SettingsPanel({
           />
         </div>
 
-        <div className={styles.field} style={{ marginTop: tokens.spacingVerticalM }}>
+        <div className={styles.fieldSpaced}>
           <Label size="small">{t("settings.defaultTimeout")}</Label>
           <SpinButton
             value={defaultTimeout}
             min={10}
-            size="small"
             onChange={(_, data) => {
               if (data.value !== undefined && data.value !== null) {
                 setDefaultTimeout(data.value);
@@ -177,7 +185,6 @@ export function SettingsPanel({
             value={maxLogRetention}
             min={1}
             max={100}
-            size="small"
             onChange={(_, data) => {
               if (data.value !== undefined && data.value !== null) {
                 setMaxLogRetention(data.value);

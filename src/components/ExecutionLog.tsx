@@ -1,5 +1,4 @@
 import {
-  Badge,
   Button,
   Dialog,
   DialogActions,
@@ -16,6 +15,7 @@ import { useState, useEffect } from "react";
 import type { Task, Execution } from "../lib/types";
 import { getExecutions } from "../lib/tauri";
 import { useI18n } from "../i18n";
+import { StatusBadge } from "./StatusBadge";
 
 const useStyles = makeStyles({
   list: {
@@ -54,7 +54,7 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorNeutralBackground3,
     padding: tokens.spacingVerticalS,
     borderRadius: tokens.borderRadiusMedium,
-    fontFamily: "monospace",
+    fontFamily: "'Cascadia Code', 'Cascadia Mono', Consolas, monospace",
     fontSize: tokens.fontSizeBase200,
     maxHeight: "200px",
     overflow: "auto",
@@ -72,22 +72,6 @@ interface ExecutionLogProps {
   open: boolean;
   onClose: () => void;
   task: Task | null;
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const { t } = useI18n();
-  switch (status) {
-    case "success":
-      return <Badge appearance="filled" color="success">{t("status.success")}</Badge>;
-    case "failed":
-      return <Badge appearance="filled" color="danger">{t("status.failed")}</Badge>;
-    case "timeout":
-      return <Badge appearance="filled" color="warning">{t("status.timeout")}</Badge>;
-    case "running":
-      return <Badge appearance="filled" color="informative">{t("status.running")}</Badge>;
-    default:
-      return null;
-  }
 }
 
 function formatDuration(startedAt: string, finishedAt: string | null): string {
@@ -118,7 +102,7 @@ function ExecutionEntry({ execution }: { execution: Execution }) {
           <Text size={200}>
             {formatDuration(execution.startedAt, execution.finishedAt)}
           </Text>
-          <StatusBadge status={execution.status} />
+          <StatusBadge status={execution.status} appearance="filled" />
         </div>
         <Button
           icon={expanded ? <ChevronUp16Regular /> : <ChevronDown16Regular />}
@@ -150,7 +134,7 @@ function ExecutionEntry({ execution }: { execution: Execution }) {
           )}
           {!execution.stdout && !execution.stderr && (
             <Text size={200} italic>
-              (empty)
+              {t("log.emptyOutput")}
             </Text>
           )}
         </div>
@@ -166,7 +150,9 @@ export function ExecutionLog({ open: isOpen, onClose, task }: ExecutionLogProps)
 
   useEffect(() => {
     if (isOpen && task) {
-      getExecutions(task.id).then(setExecutions);
+      getExecutions(task.id)
+        .then(setExecutions)
+        .catch(() => setExecutions([]));
     }
   }, [isOpen, task]);
 

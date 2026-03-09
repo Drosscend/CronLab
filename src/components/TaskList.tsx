@@ -1,11 +1,13 @@
 import {
+  Button,
+  Dropdown,
   Input,
-  Select,
+  Option,
   Text,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import { Search20Regular } from "@fluentui/react-icons";
+import { Search20Regular, Clock24Regular, Add20Regular } from "@fluentui/react-icons";
 import { useState, useMemo } from "react";
 import type { Task } from "../lib/types";
 import { useI18n } from "../i18n";
@@ -33,7 +35,8 @@ const useStyles = makeStyles({
   },
   listHeader: {
     display: "grid",
-    gridTemplateColumns: "1fr 110px 80px 60px 72px",
+    gridTemplateColumns: "1fr 120px 88px 60px 72px",
+    columnGap: tokens.spacingHorizontalM,
     alignItems: "center",
     padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalL}`,
     borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
@@ -43,11 +46,19 @@ const useStyles = makeStyles({
   },
   empty: {
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
     flex: 1,
+    gap: tokens.spacingVerticalM,
     padding: tokens.spacingVerticalXXL,
+  },
+  emptyIcon: {
+    fontSize: "48px",
     color: tokens.colorNeutralForeground3,
+  },
+  emptyText: {
+    color: tokens.colorNeutralForeground2,
   },
 });
 
@@ -58,6 +69,7 @@ interface TaskListProps {
   onDelete: (task: Task) => void;
   onViewLogs: (task: Task) => void;
   onRunNow: (id: string) => void;
+  onNewTask: () => void;
 }
 
 type SortMode = "nextRun" | "name" | "created";
@@ -69,11 +81,18 @@ export function TaskList({
   onDelete,
   onViewLogs,
   onRunNow,
+  onNewTask,
 }: TaskListProps) {
   const styles = useStyles();
   const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("nextRun");
+
+  const sortLabels: Record<SortMode, string> = {
+    nextRun: t("sort.nextRun"),
+    name: t("sort.name"),
+    created: t("sort.created"),
+  };
 
   const filteredTasks = useMemo(() => {
     let result = tasks;
@@ -112,22 +131,29 @@ export function TaskList({
           placeholder={t("filter.search")}
           value={search}
           onChange={(_, data) => setSearch(data.value)}
-          size="small"
         />
-        <Select
-          value={sortMode}
-          onChange={(_, data) => setSortMode(data.value as SortMode)}
-          size="small"
+        <Dropdown
+          value={sortLabels[sortMode]}
+          selectedOptions={[sortMode]}
+          onOptionSelect={(_, data) => setSortMode(data.optionValue as SortMode)}
         >
-          <option value="nextRun">{t("sort.nextRun")}</option>
-          <option value="name">{t("sort.name")}</option>
-          <option value="created">{t("sort.created")}</option>
-        </Select>
+          <Option value="nextRun">{t("sort.nextRun")}</Option>
+          <Option value="name">{t("sort.name")}</Option>
+          <Option value="created">{t("sort.created")}</Option>
+        </Dropdown>
       </div>
 
       {filteredTasks.length === 0 ? (
         <div className={styles.empty}>
-          <Text>{t("task.empty")}</Text>
+          <Clock24Regular className={styles.emptyIcon} />
+          <Text className={styles.emptyText}>{t("task.empty")}</Text>
+          <Button
+            appearance="primary"
+            icon={<Add20Regular />}
+            onClick={onNewTask}
+          >
+            {t("task.new")}
+          </Button>
         </div>
       ) : (
         <>
@@ -135,8 +161,8 @@ export function TaskList({
             <span>{t("task.name")}</span>
             <span>{t("task.nextRun")}</span>
             <span>{t("task.status")}</span>
-            <span></span>
-            <span></span>
+            <span>{t("task.active")}</span>
+            <span>{t("task.actions")}</span>
           </div>
           <div className={styles.listContainer}>
             {filteredTasks.map((task) => (

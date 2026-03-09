@@ -8,10 +8,11 @@ import {
   DialogSurface,
   DialogTitle,
   DialogTrigger,
+  Dropdown,
   Input,
   Label,
   Link,
-  Select,
+  Option,
   SpinButton,
   makeStyles,
   tokens,
@@ -212,17 +213,26 @@ export function TaskForm({
 
               <div className={styles.field}>
                 <Label>{t("task.schedule")}</Label>
-                <Select
-                  value={scheduleType}
-                  onChange={(_, data) =>
-                    setScheduleType(data.value as Schedule["type"])
+                <Dropdown
+                  value={
+                    scheduleType === "daily"
+                      ? t("schedule.daily")
+                      : scheduleType === "hourly"
+                        ? t("schedule.hourly")
+                        : scheduleType === "weekly"
+                          ? t("schedule.weekly")
+                          : t("schedule.cron")
+                  }
+                  selectedOptions={[scheduleType]}
+                  onOptionSelect={(_, data) =>
+                    setScheduleType(data.optionValue as Schedule["type"])
                   }
                 >
-                  <option value="daily">{t("schedule.daily")}</option>
-                  <option value="hourly">{t("schedule.hourly")}</option>
-                  <option value="weekly">{t("schedule.weekly")}</option>
-                  <option value="custom_cron">{t("schedule.cron")}</option>
-                </Select>
+                  <Option value="daily">{t("schedule.daily")}</Option>
+                  <Option value="hourly">{t("schedule.hourly")}</Option>
+                  <Option value="weekly">{t("schedule.weekly")}</Option>
+                  <Option value="custom_cron">{t("schedule.cron")}</Option>
+                </Dropdown>
               </div>
 
               {(scheduleType === "daily" || scheduleType === "weekly") && (
