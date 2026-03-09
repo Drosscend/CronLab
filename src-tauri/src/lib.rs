@@ -57,7 +57,7 @@ pub fn run() {
             };
 
             let _tray = TrayIconBuilder::new()
-                .tooltip(&format!("CronLab — {} tâche(s) active(s)", active_count))
+                .tooltip(&format!("CronLab - {} tâche(s) active(s)", active_count))
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id().as_ref() {

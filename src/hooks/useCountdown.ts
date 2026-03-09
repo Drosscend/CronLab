@@ -48,7 +48,7 @@ export function useCountdown(
     }
 
     if (!nextRun) {
-      setLabel("—");
+      setLabel("-");
       return;
     }
 
