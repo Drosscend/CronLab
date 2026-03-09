@@ -40,7 +40,13 @@ fn check_and_run_tasks(
     scheduler_state: &SchedulerState,
 ) {
     let tasks = {
-        let config = app_config.config.lock().unwrap();
+        let config = match app_config.config.lock() {
+            Ok(c) => c,
+            Err(_) => {
+                eprintln!("[CronLab] Failed to lock config in scheduler");
+                return;
+            }
+        };
         config.tasks.clone()
     };
 
@@ -57,7 +63,10 @@ fn check_and_run_tasks(
                 let next_local = next_dt.with_timezone(&Local);
                 if next_local <= now {
                     let slot_key = format!("{}_{}", task.id, next_run);
-                    let mut last_triggered = scheduler_state.last_triggered.lock().unwrap();
+                    let mut last_triggered = match scheduler_state.last_triggered.lock() {
+                        Ok(lt) => lt,
+                        Err(_) => continue,
+                    };
 
                     if last_triggered.contains_key(&slot_key) {
                         continue;

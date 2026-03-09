@@ -19,6 +19,7 @@
   "task.envValue": "Value",
   "task.envAdd": "Add",
   "task.timeout": "Timeout (seconds)",
+  "task.timeoutDefault": "Default ({value}s)",
   "task.save": "Save",
   "task.cancel": "Cancel",
   "task.empty": "No tasks yet. Click \"New task\" to get started.",
@@ -71,5 +72,6 @@
   "log.stdout": "Standard output",
   "log.stderr": "Standard error",
   "log.empty": "No executions recorded.",
+  "log.emptyOutput": "(no output)",
   "log.close": "Close"
 }

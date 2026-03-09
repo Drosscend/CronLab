@@ -1,6 +1,8 @@
 use crate::config::AppConfig;
 use crate::models::{Execution, ExecutionStatus};
 use chrono::Utc;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::thread;
@@ -27,9 +29,18 @@ pub fn execute_task(
         let execution_id = uuid::Uuid::new_v4().to_string();
         let started_at = Utc::now().to_rfc3339();
 
-        let default_timeout = {
-            let config = app_config.config.lock().unwrap();
-            config.settings.default_timeout_seconds
+        let (default_timeout, notifications_lang) = {
+            let config = match app_config.config.lock() {
+                Ok(c) => c,
+                Err(_) => {
+                    eprintln!("[CronLab] Failed to lock config in executor");
+                    return;
+                }
+            };
+            (
+                config.settings.default_timeout_seconds,
+                config.settings.language.clone(),
+            )
         };
         let timeout = timeout_seconds.unwrap_or(default_timeout);
 
@@ -88,7 +99,7 @@ pub fn execute_task(
                     status: ExecutionStatus::Failed,
                 };
                 save_or_update_execution(&app_config, &task_id, &execution_id, execution);
-                send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Failed, Some(-1));
+                send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Failed, Some(-1), &notifications_lang);
                 return;
             }
         };
@@ -143,14 +154,42 @@ pub fn execute_task(
                     };
 
                     save_or_update_execution(&app_config, &task_id, &execution_id, execution);
-                    send_notification(&app_handle, &app_config, &task_name, exec_status, Some(exit_code));
+                    send_notification(&app_handle, &app_config, &task_name, exec_status, Some(exit_code), &notifications_lang);
                     return;
                 }
                 Ok(None) => {
                     if start.elapsed() >= timeout_duration {
-                        let _ = child.kill();
-                        let _ = child.wait();
+                        // Kill process tree (not just the parent)
+                        kill_process_tree(&mut child);
                         let finished_at = Utc::now().to_rfc3339();
+
+                        let stdout = child
+                            .stdout
+                            .take()
+                            .map(|out| {
+                                let mut buf = String::new();
+                                use std::io::Read;
+                                let _ = out.take(10000).read_to_string(&mut buf);
+                                buf
+                            })
+                            .unwrap_or_default();
+
+                        let stderr_output = child
+                            .stderr
+                            .take()
+                            .map(|err| {
+                                let mut buf = String::new();
+                                use std::io::Read;
+                                let _ = err.take(10000).read_to_string(&mut buf);
+                                buf
+                            })
+                            .unwrap_or_default();
+
+                        let stderr = if stderr_output.is_empty() {
+                            format!("Process killed after {}s timeout", timeout)
+                        } else {
+                            format!("{}\n\nProcess killed after {}s timeout", stderr_output, timeout)
+                        };
 
                         let execution = Execution {
                             id: execution_id.clone(),
@@ -158,13 +197,13 @@ pub fn execute_task(
                             started_at,
                             finished_at: Some(finished_at),
                             exit_code: None,
-                            stdout: String::new(),
-                            stderr: format!("Process killed after {}s timeout", timeout),
+                            stdout,
+                            stderr,
                             status: ExecutionStatus::Timeout,
                         };
 
                         save_or_update_execution(&app_config, &task_id, &execution_id, execution);
-                        send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Timeout, None);
+                        send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Timeout, None, &notifications_lang);
                         return;
                     }
                     thread::sleep(Duration::from_millis(500));
@@ -181,12 +220,31 @@ pub fn execute_task(
                         status: ExecutionStatus::Failed,
                     };
                     save_or_update_execution(&app_config, &task_id, &execution_id, execution);
-                    send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Failed, Some(-1));
+                    send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Failed, Some(-1), &notifications_lang);
                     return;
                 }
             }
         }
     });
+}
+
+/// Kill a process and all its children.
+/// On Windows, uses `taskkill /T /F /PID` to kill the process tree.
+/// On other platforms, falls back to `child.kill()`.
+fn kill_process_tree(child: &mut std::process::Child) {
+    #[cfg(target_os = "windows")]
+    {
+        let pid = child.id();
+        let _ = Command::new("taskkill")
+            .args(["/T", "/F", "/PID", &pid.to_string()])
+            .creation_flags(0x08000000) // CREATE_NO_WINDOW
+            .output();
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = child.kill();
+    }
+    let _ = child.wait();
 }
 
 /// Save a new execution or update an existing one (matched by execution_id).
@@ -207,7 +265,13 @@ fn save_or_update_execution(
 
     // Purge old executions (only finished ones)
     let max_retention = {
-        let config = app_config.config.lock().unwrap();
+        let config = match app_config.config.lock() {
+            Ok(c) => c,
+            Err(_) => {
+                let _ = app_config.save_executions(task_id, &executions);
+                return;
+            }
+        };
         config.settings.max_log_retention
     };
     let running_count = executions.iter().filter(|e| e.status == ExecutionStatus::Running).count();
@@ -229,10 +293,11 @@ fn send_notification(
     task_name: &str,
     status: ExecutionStatus,
     exit_code: Option<i32>,
+    language: &str,
 ) {
-    let notifications_enabled = {
-        let config = app_config.config.lock().unwrap();
-        config.settings.notifications
+    let notifications_enabled = match app_config.config.lock() {
+        Ok(config) => config.settings.notifications,
+        Err(_) => return,
     };
 
     if !notifications_enabled {
@@ -240,30 +305,24 @@ fn send_notification(
     }
 
     use tauri_plugin_notification::NotificationExt;
-    let (title, body) = match status {
-        ExecutionStatus::Success => (
-            "CronLab".to_string(),
-            format!("\u{2713} {} terminée", task_name),
-        ),
-        ExecutionStatus::Failed => (
-            "CronLab".to_string(),
-            format!(
-                "\u{2717} {} a échoué (code {})",
-                task_name,
-                exit_code.unwrap_or(-1)
-            ),
-        ),
-        ExecutionStatus::Timeout => (
-            "CronLab".to_string(),
-            format!("\u{23F1} {} timeout", task_name),
-        ),
+    let body = match (&status, language) {
+        (ExecutionStatus::Success, "en") => format!("\u{2713} {} completed", task_name),
+        (ExecutionStatus::Success, _) => format!("\u{2713} {} terminée", task_name),
+        (ExecutionStatus::Failed, "en") => {
+            format!("\u{2717} {} failed (code {})", task_name, exit_code.unwrap_or(-1))
+        }
+        (ExecutionStatus::Failed, _) => {
+            format!("\u{2717} {} a échoué (code {})", task_name, exit_code.unwrap_or(-1))
+        }
+        (ExecutionStatus::Timeout, "en") => format!("\u{23F1} {} timed out", task_name),
+        (ExecutionStatus::Timeout, _) => format!("\u{23F1} {} timeout", task_name),
         _ => return,
     };
 
     let _ = app_handle
         .notification()
         .builder()
-        .title(&title)
+        .title("CronLab")
         .body(&body)
         .show();
 }

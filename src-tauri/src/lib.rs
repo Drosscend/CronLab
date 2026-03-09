@@ -2,7 +2,6 @@ mod commands;
 mod config;
 mod executor;
 mod models;
-mod notifications;
 mod scheduler;
 
 use config::AppConfig;
@@ -43,9 +42,15 @@ pub fn run() {
             commands::update_settings,
         ])
         .setup(move |app| {
-            // Build tray menu
-            let open_item = MenuItemBuilder::with_id("open", "Ouvrir CronLab").build(app)?;
-            let quit_item = MenuItemBuilder::with_id("quit", "Quitter").build(app)?;
+            // Build tray menu (language-aware)
+            let language = {
+                let config = app_config_for_setup.config.lock().unwrap();
+                config.settings.language.clone()
+            };
+            let open_label = if language == "en" { "Open CronLab" } else { "Ouvrir CronLab" };
+            let quit_label = if language == "en" { "Quit" } else { "Quitter" };
+            let open_item = MenuItemBuilder::with_id("open", open_label).build(app)?;
+            let quit_item = MenuItemBuilder::with_id("quit", quit_label).build(app)?;
             let menu = MenuBuilder::new(app)
                 .items(&[&open_item, &quit_item])
                 .separator()
@@ -66,7 +71,11 @@ pub fn run() {
 
             let _tray = TrayIconBuilder::new()
                 .icon(icon)
-                .tooltip(&format!("CronLab - {} tâche(s) active(s)", active_count))
+                .tooltip(&if language == "en" {
+                    format!("CronLab - {} active task(s)", active_count)
+                } else {
+                    format!("CronLab - {} tâche(s) active(s)", active_count)
+                })
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id().as_ref() {
@@ -106,7 +115,10 @@ pub fn run() {
                 window.on_window_event(move |event| {
                     if let WindowEvent::CloseRequested { api, .. } = event {
                         let close_to_tray = {
-                            let config = app_config_for_close.config.lock().unwrap();
+                            let config = match app_config_for_close.config.lock() {
+                                Ok(c) => c,
+                                Err(_) => return,
+                            };
                             config.settings.close_to_tray
                         };
 

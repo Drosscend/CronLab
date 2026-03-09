@@ -19,6 +19,7 @@
   "task.envValue": "Valeur",
   "task.envAdd": "Ajouter",
   "task.timeout": "Timeout (secondes)",
+  "task.timeoutDefault": "Par défaut ({value}s)",
   "task.save": "Sauvegarder",
   "task.cancel": "Annuler",
   "task.empty": "Aucune tâche. Cliquez sur \"Nouvelle tâche\" pour commencer.",
@@ -71,5 +72,6 @@
   "log.stdout": "Sortie standard",
   "log.stderr": "Erreur standard",
   "log.empty": "Aucune exécution enregistrée.",
+  "log.emptyOutput": "(aucune sortie)",
   "log.close": "Fermer"
 }

@@ -1,10 +1,40 @@
 use crate::config::AppConfig;
 use crate::executor::execute_task;
-use crate::models::{Execution, Settings, Task, TaskInput};
+use crate::models::{Execution, ScheduleType, Settings, Task, TaskInput};
 use crate::scheduler::compute_next_run;
 use chrono::Utc;
 use std::sync::Arc;
 use tauri::State;
+
+fn validate_task_input(input: &TaskInput) -> Result<(), String> {
+    let name = input.name.trim();
+    if name.is_empty() {
+        return Err("Task name cannot be empty".to_string());
+    }
+    if name.len() > 200 {
+        return Err("Task name is too long (max 200 characters)".to_string());
+    }
+    if input.command.trim().is_empty() {
+        return Err("Command cannot be empty".to_string());
+    }
+    if input.working_directory.trim().is_empty() {
+        return Err("Working directory cannot be empty".to_string());
+    }
+    let wd = std::path::Path::new(&input.working_directory);
+    if !wd.is_absolute() {
+        return Err("Working directory must be an absolute path".to_string());
+    }
+    if let ScheduleType::CustomCron = input.schedule.schedule_type {
+        if let Some(expr) = &input.schedule.cron_expression {
+            use std::str::FromStr;
+            cron::Schedule::from_str(expr)
+                .map_err(|e| format!("Invalid cron expression: {}", e))?;
+        } else {
+            return Err("Cron expression is required for custom_cron schedule".to_string());
+        }
+    }
+    Ok(())
+}
 
 #[tauri::command]
 pub fn get_tasks(app_config: State<'_, Arc<AppConfig>>) -> Result<Vec<Task>, String> {
@@ -17,6 +47,7 @@ pub fn create_task(
     app_config: State<'_, Arc<AppConfig>>,
     input: TaskInput,
 ) -> Result<Task, String> {
+    validate_task_input(&input)?;
     let now = Utc::now().to_rfc3339();
     let task = Task {
         id: uuid::Uuid::new_v4().to_string(),
@@ -46,6 +77,7 @@ pub fn update_task(
     id: String,
     input: TaskInput,
 ) -> Result<Task, String> {
+    validate_task_input(&input)?;
     let mut config = app_config.config.lock().map_err(|e| e.to_string())?;
 
     let task = config

@@ -2,7 +2,6 @@ import {
   Button,
   Input,
   Label,
-  SpinButton,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
@@ -89,7 +88,7 @@ export function TaskAdvanced({
     <div className={styles.section}>
       <Label>{t("task.envVars")}</Label>
       {entries.map(([key, value], index) => (
-        <div className={styles.envRow} key={index}>
+        <div className={styles.envRow} key={`env-${index}-${key}`}>
           <Input
             className={styles.envInput}
             placeholder={t("task.envKey")}
@@ -120,16 +119,13 @@ export function TaskAdvanced({
       </Button>
 
       <Label>{t("task.timeout")}</Label>
-      <SpinButton
-        value={timeoutSeconds ?? undefined}
-        placeholder={`${t("task.timeout")} (${defaultTimeout})`}
-        min={1}
+      <Input
+        type="number"
+        value={timeoutSeconds !== null ? String(timeoutSeconds) : ""}
+        placeholder={t("task.timeoutDefault", { value: defaultTimeout })}
         onChange={(_, data) => {
-          onTimeoutChange(
-            data.value !== undefined && data.value !== null
-              ? data.value
-              : null
-          );
+          const num = parseInt(data.value, 10);
+          onTimeoutChange(isNaN(num) ? null : Math.max(1, num));
         }}
       />
     </div>

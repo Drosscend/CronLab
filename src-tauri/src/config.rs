@@ -10,6 +10,8 @@ pub struct AppConfig {
     pub config: Mutex<Config>,
     config_path: PathBuf,
     logs_dir: PathBuf,
+    /// Guards concurrent access to execution log files.
+    logs_lock: Mutex<()>,
 }
 
 impl AppConfig {
@@ -41,6 +43,7 @@ impl AppConfig {
             config: Mutex::new(config),
             config_path,
             logs_dir,
+            logs_lock: Mutex::new(()),
         }
     }
 
@@ -60,6 +63,7 @@ impl AppConfig {
     /// Load all execution records for a task from its JSON log file.
     /// Returns an empty vector if the file does not exist or is unreadable.
     pub fn load_executions(&self, task_id: &str) -> Vec<Execution> {
+        let _lock = self.logs_lock.lock().unwrap_or_else(|e| e.into_inner());
         let path = self.get_log_path(task_id);
         if path.exists() {
             let content = fs::read_to_string(&path).unwrap_or_default();
@@ -71,6 +75,7 @@ impl AppConfig {
 
     /// Write execution records back to the task's JSON log file.
     pub fn save_executions(&self, task_id: &str, executions: &[Execution]) -> Result<(), String> {
+        let _lock = self.logs_lock.lock().unwrap_or_else(|e| e.into_inner());
         let path = self.get_log_path(task_id);
         let content = serde_json::to_string_pretty(executions).map_err(|e| e.to_string())?;
         fs::write(path, content).map_err(|e| e.to_string())?;
