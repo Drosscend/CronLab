@@ -1,0 +1,57 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Extract version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json | head -1)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ steps.version.outputs.tag }}
+          releaseName: CronLab ${{ steps.version.outputs.tag }}
+          releaseBody: |
+            ## CronLab ${{ steps.version.outputs.tag }}
+
+            ### Installation
+            Téléchargez le fichier `.msi` ou `.exe` ci-dessous et lancez l'installation.
+
+            ### Changelog
+            Voir les [commits](https://github.com/${{ github.repository }}/commits/${{ github.sha }}) depuis la dernière release.
+          releaseDraft: false
+          prerelease: false
+          updaterJsonPreferNsis: true
