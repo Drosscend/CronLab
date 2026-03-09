@@ -15,10 +15,13 @@
         "title": "CronLab",
         "label": "main",
         "width": 600,
-        "height": 400,
+        "height": 420,
         "minWidth": 500,
         "minHeight": 350,
+        "maxWidth": 800,
+        "maxHeight": 600,
         "resizable": true,
+        "maximizable": false,
         "center": true
       }
     ],

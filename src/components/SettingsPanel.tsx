@@ -1,37 +1,62 @@
 import {
   Button,
-  Dialog,
-  DialogActions,
-  DialogBody,
-  DialogContent,
-  DialogSurface,
-  DialogTitle,
   Label,
   Select,
   SpinButton,
   Switch,
+  Text,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
+import { ArrowLeft20Regular } from "@fluentui/react-icons";
 import { useState, useEffect } from "react";
 import type { Settings } from "../lib/types";
 import { useI18n } from "../i18n";
 
 const useStyles = makeStyles({
-  form: {
+  root: {
     display: "flex",
     flexDirection: "column",
-    gap: tokens.spacingVerticalM,
+    height: "100vh",
+    overflow: "hidden",
+  },
+  header: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalL}`,
+    minHeight: "44px",
+  },
+  title: {
+    fontSize: tokens.fontSizeBase400,
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  content: {
+    flex: 1,
+    overflow: "auto",
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalL}`,
   },
   field: {
     display: "flex",
     flexDirection: "column",
-    gap: tokens.spacingVerticalXS,
+    gap: "4px",
+    marginBottom: tokens.spacingVerticalM,
   },
-  switchField: {
+  switchRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    height: "36px",
+  },
+  switchLabel: {
+    fontSize: tokens.fontSizeBase300,
+  },
+  footer: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: tokens.spacingHorizontalS,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalL}`,
+    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
   },
 });
 
@@ -81,93 +106,95 @@ export function SettingsPanel({
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(_, data) => {
-        if (!data.open) onClose();
-      }}
-    >
-      <DialogSurface>
-        <DialogBody>
-          <DialogTitle>{t("settings.title")}</DialogTitle>
-          <DialogContent>
-            <div className={styles.form}>
-              <div className={styles.field}>
-                <Label>{t("settings.language")}</Label>
-                <Select
-                  value={language}
-                  onChange={(_, data) =>
-                    setLanguage(data.value as "fr" | "en")
-                  }
-                >
-                  <option value="fr">Français</option>
-                  <option value="en">English</option>
-                </Select>
-              </div>
+    <div className={styles.root}>
+      <div className={styles.header}>
+        <Button
+          icon={<ArrowLeft20Regular />}
+          appearance="subtle"
+          size="small"
+          onClick={onClose}
+        />
+        <Text className={styles.title}>{t("settings.title")}</Text>
+      </div>
 
-              <div className={styles.switchField}>
-                <Label>{t("settings.startup")}</Label>
-                <Switch
-                  checked={launchAtStartup}
-                  onChange={(_, data) => setLaunchAtStartup(data.checked)}
-                />
-              </div>
+      <div className={styles.content}>
+        <div className={styles.field}>
+          <Label size="small">{t("settings.language")}</Label>
+          <Select
+            value={language}
+            onChange={(_, data) => setLanguage(data.value as "fr" | "en")}
+            size="small"
+          >
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </Select>
+        </div>
 
-              <div className={styles.switchField}>
-                <Label>{t("settings.tray")}</Label>
-                <Switch
-                  checked={closeToTray}
-                  onChange={(_, data) => setCloseToTray(data.checked)}
-                />
-              </div>
+        <div className={styles.switchRow}>
+          <Text className={styles.switchLabel}>{t("settings.startup")}</Text>
+          <Switch
+            checked={launchAtStartup}
+            onChange={(_, data) => setLaunchAtStartup(data.checked)}
+          />
+        </div>
 
-              <div className={styles.switchField}>
-                <Label>{t("settings.notifications")}</Label>
-                <Switch
-                  checked={notifications}
-                  onChange={(_, data) => setNotifications(data.checked)}
-                />
-              </div>
+        <div className={styles.switchRow}>
+          <Text className={styles.switchLabel}>{t("settings.tray")}</Text>
+          <Switch
+            checked={closeToTray}
+            onChange={(_, data) => setCloseToTray(data.checked)}
+          />
+        </div>
 
-              <div className={styles.field}>
-                <Label>{t("settings.defaultTimeout")}</Label>
-                <SpinButton
-                  value={defaultTimeout}
-                  min={10}
-                  onChange={(_, data) => {
-                    if (data.value !== undefined && data.value !== null) {
-                      setDefaultTimeout(data.value);
-                    }
-                  }}
-                />
-              </div>
+        <div className={styles.switchRow}>
+          <Text className={styles.switchLabel}>{t("settings.notifications")}</Text>
+          <Switch
+            checked={notifications}
+            onChange={(_, data) => setNotifications(data.checked)}
+          />
+        </div>
 
-              <div className={styles.field}>
-                <Label>{t("settings.logRetention")}</Label>
-                <SpinButton
-                  value={maxLogRetention}
-                  min={1}
-                  max={100}
-                  onChange={(_, data) => {
-                    if (data.value !== undefined && data.value !== null) {
-                      setMaxLogRetention(data.value);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-          </DialogContent>
-          <DialogActions>
-            <Button appearance="secondary" onClick={onClose}>
-              {t("task.cancel")}
-            </Button>
-            <Button appearance="primary" onClick={handleSave}>
-              {t("settings.save")}
-            </Button>
-          </DialogActions>
-        </DialogBody>
-      </DialogSurface>
-    </Dialog>
+        <div className={styles.field} style={{ marginTop: tokens.spacingVerticalM }}>
+          <Label size="small">{t("settings.defaultTimeout")}</Label>
+          <SpinButton
+            value={defaultTimeout}
+            min={10}
+            size="small"
+            onChange={(_, data) => {
+              if (data.value !== undefined && data.value !== null) {
+                setDefaultTimeout(data.value);
+              }
+            }}
+          />
+        </div>
+
+        <div className={styles.field}>
+          <Label size="small">{t("settings.logRetention")}</Label>
+          <SpinButton
+            value={maxLogRetention}
+            min={1}
+            max={100}
+            size="small"
+            onChange={(_, data) => {
+              if (data.value !== undefined && data.value !== null) {
+                setMaxLogRetention(data.value);
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      <div className={styles.footer}>
+        <Button appearance="secondary" size="small" onClick={onClose}>
+          {t("task.cancel")}
+        </Button>
+        <Button appearance="primary" size="small" onClick={handleSave}>
+          {t("settings.save")}
+        </Button>
+      </div>
+    </div>
   );
 }

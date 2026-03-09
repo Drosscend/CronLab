@@ -34,6 +34,8 @@ const useStyles = makeStyles({
   },
 });
 
+type View = "tasks" | "settings";
+
 function App() {
   const styles = useStyles();
   const theme = useTheme();
@@ -41,14 +43,13 @@ function App() {
   const { settings, save: saveSettings } = useSettings();
 
   const [language, setLanguage] = useState<Language>("fr");
+  const [view, setView] = useState<View>("tasks");
   const [showForm, setShowForm] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
-  const [showSettings, setShowSettings] = useState(false);
   const [showLogs, setShowLogs] = useState(false);
   const [logsTask, setLogsTask] = useState<Task | null>(null);
   const [deleteTask, setDeleteTask] = useState<Task | null>(null);
 
-  // Sync language from settings
   useEffect(() => {
     if (settings) setLanguage(settings.language);
   }, [settings]);
@@ -110,20 +111,29 @@ function App() {
       theme={theme === "dark" ? webDarkTheme : webLightTheme}
     >
       <I18nContext.Provider value={i18nValue}>
-        <div className={styles.root}>
-          <Header
-            onNewTask={handleNewTask}
-            onOpenSettings={() => setShowSettings(true)}
+        {view === "settings" ? (
+          <SettingsPanel
+            open={true}
+            onClose={() => setView("tasks")}
+            settings={settings}
+            onSave={handleSaveSettings}
           />
-          <TaskList
-            tasks={tasks}
-            onToggle={toggle}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onViewLogs={handleViewLogs}
-            onRunNow={runNow}
-          />
-        </div>
+        ) : (
+          <div className={styles.root}>
+            <Header
+              onNewTask={handleNewTask}
+              onOpenSettings={() => setView("settings")}
+            />
+            <TaskList
+              tasks={tasks}
+              onToggle={toggle}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onViewLogs={handleViewLogs}
+              onRunNow={runNow}
+            />
+          </div>
+        )}
 
         <TaskForm
           open={showForm}
@@ -137,13 +147,6 @@ function App() {
           open={showLogs}
           onClose={() => setShowLogs(false)}
           task={logsTask}
-        />
-
-        <SettingsPanel
-          open={showSettings}
-          onClose={() => setShowSettings(false)}
-          settings={settings}
-          onSave={handleSaveSettings}
         />
 
         {/* Delete confirmation dialog */}

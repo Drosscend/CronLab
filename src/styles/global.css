@@ -1,5 +1,5 @@
 :root {
-  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.5;
   color-scheme: light dark;
@@ -23,7 +23,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Scrollbar styling */
+/* Override Fluent UI dialog to remove excessive rounding on small windows */
+.fui-DialogSurface {
+  border-radius: 7px !important;
+}
+
+/* Scrollbar styling - Windows 11 style */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -34,10 +39,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.4);
+  background: rgba(128, 128, 128, 0.3);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(128, 128, 128, 0.6);
+  background: rgba(128, 128, 128, 0.5);
 }

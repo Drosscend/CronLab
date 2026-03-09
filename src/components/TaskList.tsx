@@ -1,16 +1,11 @@
 import {
   Input,
   Select,
-  Table,
-  TableBody,
-  TableHeader,
-  TableHeaderCell,
-  TableRow,
   Text,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import { Search24Regular } from "@fluentui/react-icons";
+import { Search20Regular } from "@fluentui/react-icons";
 import { useState, useMemo } from "react";
 import type { Task } from "../lib/types";
 import { useI18n } from "../i18n";
@@ -26,16 +21,25 @@ const useStyles = makeStyles({
   filterBar: {
     display: "flex",
     gap: tokens.spacingHorizontalS,
-    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
+    padding: `0 ${tokens.spacingHorizontalL} ${tokens.spacingVerticalS}`,
     alignItems: "center",
   },
   searchInput: {
     flex: 1,
   },
-  tableContainer: {
+  listContainer: {
     flex: 1,
     overflow: "auto",
-    padding: `0 ${tokens.spacingHorizontalM}`,
+  },
+  listHeader: {
+    display: "grid",
+    gridTemplateColumns: "1fr 110px 80px 60px 72px",
+    alignItems: "center",
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalL}`,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+    fontWeight: tokens.fontWeightSemibold,
   },
   empty: {
     display: "flex",
@@ -91,7 +95,6 @@ export function TaskList({
           );
         case "nextRun":
         default:
-          // Enabled tasks first, then by name
           if (a.enabled !== b.enabled) return a.enabled ? -1 : 1;
           return a.name.localeCompare(b.name);
       }
@@ -105,14 +108,16 @@ export function TaskList({
       <div className={styles.filterBar}>
         <Input
           className={styles.searchInput}
-          contentBefore={<Search24Regular />}
+          contentBefore={<Search20Regular />}
           placeholder={t("filter.search")}
           value={search}
           onChange={(_, data) => setSearch(data.value)}
+          size="small"
         />
         <Select
           value={sortMode}
           onChange={(_, data) => setSortMode(data.value as SortMode)}
+          size="small"
         >
           <option value="nextRun">{t("sort.nextRun")}</option>
           <option value="name">{t("sort.name")}</option>
@@ -125,32 +130,28 @@ export function TaskList({
           <Text>{t("task.empty")}</Text>
         </div>
       ) : (
-        <div className={styles.tableContainer}>
-          <Table size="small">
-            <TableHeader>
-              <TableRow>
-                <TableHeaderCell>{t("task.name")}</TableHeaderCell>
-                <TableHeaderCell>{t("task.nextRun")}</TableHeaderCell>
-                <TableHeaderCell>{t("task.status")}</TableHeaderCell>
-                <TableHeaderCell>{t("task.active")}</TableHeaderCell>
-                <TableHeaderCell>{t("task.actions")}</TableHeaderCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  onToggle={onToggle}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onViewLogs={onViewLogs}
-                  onRunNow={onRunNow}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <>
+          <div className={styles.listHeader}>
+            <span>{t("task.name")}</span>
+            <span>{t("task.nextRun")}</span>
+            <span>{t("task.status")}</span>
+            <span></span>
+            <span></span>
+          </div>
+          <div className={styles.listContainer}>
+            {filteredTasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                onToggle={onToggle}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onViewLogs={onViewLogs}
+                onRunNow={onRunNow}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

@@ -1,11 +1,9 @@
 import {
   Button,
-  Text,
-  ToolbarButton,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import { Settings24Regular, Add24Regular } from "@fluentui/react-icons";
+import { Settings20Regular, Add20Regular } from "@fluentui/react-icons";
 import { useI18n } from "../i18n";
 
 const useStyles = makeStyles({
@@ -13,17 +11,18 @@ const useStyles = makeStyles({
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalM}`,
-    borderBottom: `1px solid ${tokens.colorNeutralStroke1}`,
+    padding: `${tokens.spacingVerticalS} ${tokens.spacingHorizontalL}`,
+    minHeight: "48px",
   },
-  title: {
-    fontWeight: tokens.fontWeightSemibold,
-    fontSize: tokens.fontSizeBase500,
-  },
-  actions: {
+  left: {
     display: "flex",
-    gap: tokens.spacingHorizontalS,
     alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
+  right: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalXS,
   },
 });
 
@@ -38,20 +37,24 @@ export function Header({ onNewTask, onOpenSettings }: HeaderProps) {
 
   return (
     <div className={styles.header}>
-      <Text className={styles.title}>{t("app.title")}</Text>
-      <div className={styles.actions}>
-        <ToolbarButton
-          icon={<Settings24Regular />}
-          aria-label={t("settings.title")}
-          onClick={onOpenSettings}
-        />
+      <div className={styles.left}>
         <Button
-          appearance="primary"
-          icon={<Add24Regular />}
+          appearance="outline"
+          icon={<Add20Regular />}
           onClick={onNewTask}
+          size="small"
         >
           {t("task.new")}
         </Button>
+      </div>
+      <div className={styles.right}>
+        <Button
+          icon={<Settings20Regular />}
+          appearance="subtle"
+          size="small"
+          aria-label={t("settings.title")}
+          onClick={onOpenSettings}
+        />
       </div>
     </div>
   );

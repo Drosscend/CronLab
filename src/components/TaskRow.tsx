@@ -7,17 +7,15 @@ import {
   MenuPopover,
   MenuTrigger,
   Switch,
-  TableCell,
-  TableRow,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
 import {
-  MoreHorizontal24Regular,
-  Play24Regular,
-  Edit24Regular,
-  Delete24Regular,
-  History24Regular,
+  MoreHorizontal20Regular,
+  Play20Regular,
+  Edit20Regular,
+  Delete20Regular,
+  History20Regular,
 } from "@fluentui/react-icons";
 import type { Task } from "../lib/types";
 import { useI18n } from "../i18n";
@@ -26,16 +24,34 @@ import { useState, useEffect } from "react";
 import { getExecutions } from "../lib/tauri";
 
 const useStyles = makeStyles({
+  row: {
+    display: "grid",
+    gridTemplateColumns: "1fr 110px 80px 60px 72px",
+    alignItems: "center",
+    padding: `${tokens.spacingVerticalXS} ${tokens.spacingHorizontalL}`,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    fontSize: tokens.fontSizeBase300,
+    "&:hover": {
+      backgroundColor: tokens.colorNeutralBackground1Hover,
+    },
+  },
   disabled: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
-  nameCell: {
+  name: {
     fontWeight: tokens.fontWeightSemibold,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
-  actionsCell: {
+  countdown: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground2,
+  },
+  actions: {
     display: "flex",
     alignItems: "center",
-    gap: tokens.spacingHorizontalXS,
+    gap: "2px",
   },
 });
 
@@ -50,18 +66,17 @@ interface TaskRowProps {
 
 function StatusBadge({ status }: { status: string }) {
   const { t } = useI18n();
-
   switch (status) {
     case "success":
-      return <Badge appearance="filled" color="success">{t("status.success")}</Badge>;
+      return <Badge appearance="tint" color="success" size="small">{t("status.success")}</Badge>;
     case "failed":
-      return <Badge appearance="filled" color="danger">{t("status.failed")}</Badge>;
+      return <Badge appearance="tint" color="danger" size="small">{t("status.failed")}</Badge>;
     case "timeout":
-      return <Badge appearance="filled" color="warning">{t("status.timeout")}</Badge>;
+      return <Badge appearance="tint" color="warning" size="small">{t("status.timeout")}</Badge>;
     case "running":
-      return <Badge appearance="filled" color="informative">{t("status.running")}</Badge>;
+      return <Badge appearance="tint" color="informative" size="small">{t("status.running")}</Badge>;
     default:
-      return <Badge appearance="outline" color="subtle">{t("status.never")}</Badge>;
+      return <Badge appearance="outline" color="subtle" size="small">{t("status.never")}</Badge>;
   }
 }
 
@@ -91,7 +106,6 @@ export function TaskRow({
     setRunning(true);
     try {
       await onRunNow(task.id);
-      // Poll for result after a short delay
       setTimeout(async () => {
         const execs = await getExecutions(task.id, 1);
         if (execs.length > 0) {
@@ -105,58 +119,56 @@ export function TaskRow({
   };
 
   return (
-    <TableRow className={!task.enabled ? styles.disabled : undefined}>
-      <TableCell className={styles.nameCell}>{task.name}</TableCell>
-      <TableCell>{countdown}</TableCell>
-      <TableCell>
+    <div className={`${styles.row} ${!task.enabled ? styles.disabled : ""}`}>
+      <span className={styles.name}>{task.name}</span>
+      <span className={styles.countdown}>{countdown}</span>
+      <span>
         <StatusBadge status={lastStatus} />
-      </TableCell>
-      <TableCell>
+      </span>
+      <span>
         <Switch
           checked={task.enabled}
           onChange={(_, data) => onToggle(task.id, data.checked)}
         />
-      </TableCell>
-      <TableCell>
-        <div className={styles.actionsCell}>
-          <Button
-            icon={<Play24Regular />}
-            appearance="subtle"
-            size="small"
-            aria-label={t("task.runNow")}
-            onClick={handleRunNow}
-            disabled={running}
-          />
-          <Menu>
-            <MenuTrigger>
-              <Button
-                icon={<MoreHorizontal24Regular />}
-                appearance="subtle"
-                size="small"
-              />
-            </MenuTrigger>
-            <MenuPopover>
-              <MenuList>
-                <MenuItem icon={<Edit24Regular />} onClick={() => onEdit(task)}>
-                  {t("task.edit")}
-                </MenuItem>
-                <MenuItem
-                  icon={<History24Regular />}
-                  onClick={() => onViewLogs(task)}
-                >
-                  {t("task.logs")}
-                </MenuItem>
-                <MenuItem
-                  icon={<Delete24Regular />}
-                  onClick={() => onDelete(task)}
-                >
-                  {t("task.delete")}
-                </MenuItem>
-              </MenuList>
-            </MenuPopover>
-          </Menu>
-        </div>
-      </TableCell>
-    </TableRow>
+      </span>
+      <span className={styles.actions}>
+        <Button
+          icon={<Play20Regular />}
+          appearance="subtle"
+          size="small"
+          aria-label={t("task.runNow")}
+          onClick={handleRunNow}
+          disabled={running}
+        />
+        <Menu>
+          <MenuTrigger>
+            <Button
+              icon={<MoreHorizontal20Regular />}
+              appearance="subtle"
+              size="small"
+            />
+          </MenuTrigger>
+          <MenuPopover>
+            <MenuList>
+              <MenuItem icon={<Edit20Regular />} onClick={() => onEdit(task)}>
+                {t("task.edit")}
+              </MenuItem>
+              <MenuItem
+                icon={<History20Regular />}
+                onClick={() => onViewLogs(task)}
+              >
+                {t("task.logs")}
+              </MenuItem>
+              <MenuItem
+                icon={<Delete20Regular />}
+                onClick={() => onDelete(task)}
+              >
+                {t("task.delete")}
+              </MenuItem>
+            </MenuList>
+          </MenuPopover>
+        </Menu>
+      </span>
+    </div>
   );
 }
