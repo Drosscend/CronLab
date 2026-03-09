@@ -6,6 +6,7 @@ import {
   MenuList,
   MenuPopover,
   MenuTrigger,
+  Spinner,
   Switch,
   makeStyles,
   tokens,
@@ -20,7 +21,7 @@ import {
 import type { Task } from "../lib/types";
 import { useI18n } from "../i18n";
 import { useCountdown } from "../hooks/useCountdown";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getExecutions } from "../lib/tauri";
 
 const useStyles = makeStyles({
@@ -92,31 +93,55 @@ export function TaskRow({
   const { t } = useI18n();
   const { label: countdown } = useCountdown(task.id, task.enabled, t);
   const [lastStatus, setLastStatus] = useState<string>("never");
-  const [running, setRunning] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    getExecutions(task.id, 1).then((execs) => {
+  const fetchStatus = useCallback(async () => {
+    try {
+      const execs = await getExecutions(task.id, 1);
       if (execs.length > 0) {
         setLastStatus(execs[0].status);
+        return execs[0].status;
       }
-    });
+    } catch { /* ignore */ }
+    return "never";
   }, [task.id]);
 
+  // Initial fetch
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
+
+  // Poll while running
+  useEffect(() => {
+    if (lastStatus === "running") {
+      pollRef.current = setInterval(async () => {
+        const status = await fetchStatus();
+        if (status !== "running" && pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      }, 2000);
+    }
+
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [lastStatus, fetchStatus]);
+
   const handleRunNow = async () => {
-    setRunning(true);
+    setLastStatus("running");
     try {
       await onRunNow(task.id);
-      setTimeout(async () => {
-        const execs = await getExecutions(task.id, 1);
-        if (execs.length > 0) {
-          setLastStatus(execs[0].status);
-        }
-        setRunning(false);
-      }, 2000);
+      // The poll loop will pick up the final status
     } catch {
-      setRunning(false);
+      await fetchStatus();
     }
   };
+
+  const isRunning = lastStatus === "running";
 
   return (
     <div className={`${styles.row} ${!task.enabled ? styles.disabled : ""}`}>
@@ -132,14 +157,17 @@ export function TaskRow({
         />
       </span>
       <span className={styles.actions}>
-        <Button
-          icon={<Play20Regular />}
-          appearance="subtle"
-          size="small"
-          aria-label={t("task.runNow")}
-          onClick={handleRunNow}
-          disabled={running}
-        />
+        {isRunning ? (
+          <Spinner size="tiny" />
+        ) : (
+          <Button
+            icon={<Play20Regular />}
+            appearance="subtle"
+            size="small"
+            aria-label={t("task.runNow")}
+            onClick={handleRunNow}
+          />
+        )}
         <Menu>
           <MenuTrigger>
             <Button

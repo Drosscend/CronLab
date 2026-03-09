@@ -27,16 +27,33 @@ pub fn execute_task(
         };
         let timeout = timeout_seconds.unwrap_or(default_timeout);
 
-        // Parse command - split on spaces, respecting the first token as the program
+        // Save a "running" entry immediately so it appears in logs
+        let running_execution = Execution {
+            id: execution_id.clone(),
+            task_id: task_id.clone(),
+            started_at: started_at.clone(),
+            finished_at: None,
+            exit_code: None,
+            stdout: String::new(),
+            stderr: String::new(),
+            status: ExecutionStatus::Running,
+        };
+        save_or_update_execution(&app_config, &task_id, &execution_id, running_execution);
+
+        // Parse command
         let parts: Vec<&str> = command.split_whitespace().collect();
         if parts.is_empty() {
-            save_failed_execution(
-                &app_config,
-                &execution_id,
-                &task_id,
-                &started_at,
-                "Empty command".to_string(),
-            );
+            let execution = Execution {
+                id: execution_id.clone(),
+                task_id: task_id.clone(),
+                started_at,
+                finished_at: Some(Utc::now().to_rfc3339()),
+                exit_code: Some(-1),
+                stdout: String::new(),
+                stderr: "Empty command".to_string(),
+                status: ExecutionStatus::Failed,
+            };
+            save_or_update_execution(&app_config, &task_id, &execution_id, execution);
             return;
         }
 
@@ -54,13 +71,17 @@ pub fn execute_task(
         let mut child = match child_result {
             Ok(c) => c,
             Err(e) => {
-                save_failed_execution(
-                    &app_config,
-                    &execution_id,
-                    &task_id,
-                    &started_at,
-                    format!("Failed to spawn: {}", e),
-                );
+                let execution = Execution {
+                    id: execution_id.clone(),
+                    task_id: task_id.clone(),
+                    started_at,
+                    finished_at: Some(Utc::now().to_rfc3339()),
+                    exit_code: Some(-1),
+                    stdout: String::new(),
+                    stderr: format!("Failed to spawn: {}", e),
+                    status: ExecutionStatus::Failed,
+                };
+                save_or_update_execution(&app_config, &task_id, &execution_id, execution);
                 send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Failed, Some(-1));
                 return;
             }
@@ -73,7 +94,6 @@ pub fn execute_task(
         loop {
             match child.try_wait() {
                 Ok(Some(status)) => {
-                    // Process finished
                     let finished_at = Utc::now().to_rfc3339();
                     let exit_code = status.code().unwrap_or(-1);
 
@@ -83,9 +103,8 @@ pub fn execute_task(
                         .map(|out| {
                             let mut buf = String::new();
                             use std::io::Read;
-                            let mut reader = out;
-                            let _ = reader.read_to_string(&mut buf);
-                            truncate_string(buf, 10000)
+                            let _ = out.take(10000).read_to_string(&mut buf);
+                            buf
                         })
                         .unwrap_or_default();
 
@@ -95,9 +114,8 @@ pub fn execute_task(
                         .map(|err| {
                             let mut buf = String::new();
                             use std::io::Read;
-                            let mut reader = err;
-                            let _ = reader.read_to_string(&mut buf);
-                            truncate_string(buf, 10000)
+                            let _ = err.take(10000).read_to_string(&mut buf);
+                            buf
                         })
                         .unwrap_or_default();
 
@@ -108,7 +126,7 @@ pub fn execute_task(
                     };
 
                     let execution = Execution {
-                        id: execution_id,
+                        id: execution_id.clone(),
                         task_id: task_id.clone(),
                         started_at,
                         finished_at: Some(finished_at),
@@ -118,20 +136,18 @@ pub fn execute_task(
                         status: exec_status.clone(),
                     };
 
-                    save_execution(&app_config, &task_id, execution);
+                    save_or_update_execution(&app_config, &task_id, &execution_id, execution);
                     send_notification(&app_handle, &app_config, &task_name, exec_status, Some(exit_code));
                     return;
                 }
                 Ok(None) => {
-                    // Still running
                     if start.elapsed() >= timeout_duration {
-                        // Timeout - kill the process
                         let _ = child.kill();
                         let _ = child.wait();
                         let finished_at = Utc::now().to_rfc3339();
 
                         let execution = Execution {
-                            id: execution_id,
+                            id: execution_id.clone(),
                             task_id: task_id.clone(),
                             started_at,
                             finished_at: Some(finished_at),
@@ -141,20 +157,24 @@ pub fn execute_task(
                             status: ExecutionStatus::Timeout,
                         };
 
-                        save_execution(&app_config, &task_id, execution);
+                        save_or_update_execution(&app_config, &task_id, &execution_id, execution);
                         send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Timeout, None);
                         return;
                     }
                     thread::sleep(Duration::from_millis(500));
                 }
                 Err(e) => {
-                    save_failed_execution(
-                        &app_config,
-                        &execution_id,
-                        &task_id,
-                        &started_at,
-                        format!("Wait error: {}", e),
-                    );
+                    let execution = Execution {
+                        id: execution_id.clone(),
+                        task_id: task_id.clone(),
+                        started_at,
+                        finished_at: Some(Utc::now().to_rfc3339()),
+                        exit_code: Some(-1),
+                        stdout: String::new(),
+                        stderr: format!("Wait error: {}", e),
+                        status: ExecutionStatus::Failed,
+                    };
+                    save_or_update_execution(&app_config, &task_id, &execution_id, execution);
                     send_notification(&app_handle, &app_config, &task_name, ExecutionStatus::Failed, Some(-1));
                     return;
                 }
@@ -163,37 +183,35 @@ pub fn execute_task(
     });
 }
 
-fn save_failed_execution(
+/// Save a new execution or update an existing one (matched by execution_id).
+fn save_or_update_execution(
     app_config: &AppConfig,
-    execution_id: &str,
     task_id: &str,
-    started_at: &str,
-    error: String,
+    execution_id: &str,
+    execution: Execution,
 ) {
-    let execution = Execution {
-        id: execution_id.to_string(),
-        task_id: task_id.to_string(),
-        started_at: started_at.to_string(),
-        finished_at: Some(Utc::now().to_rfc3339()),
-        exit_code: Some(-1),
-        stdout: String::new(),
-        stderr: error,
-        status: ExecutionStatus::Failed,
-    };
-    save_execution(app_config, task_id, execution);
-}
-
-fn save_execution(app_config: &AppConfig, task_id: &str, execution: Execution) {
     let mut executions = app_config.load_executions(task_id);
-    executions.push(execution);
 
-    // Purge old executions
+    // Try to find and update existing entry
+    if let Some(existing) = executions.iter_mut().find(|e| e.id == execution_id) {
+        *existing = execution;
+    } else {
+        executions.push(execution);
+    }
+
+    // Purge old executions (only finished ones)
     let max_retention = {
         let config = app_config.config.lock().unwrap();
         config.settings.max_log_retention
     };
-    while executions.len() > max_retention {
-        executions.remove(0);
+    let running_count = executions.iter().filter(|e| e.status == ExecutionStatus::Running).count();
+    while executions.len() > max_retention + running_count {
+        // Remove oldest finished execution
+        if let Some(idx) = executions.iter().position(|e| e.status != ExecutionStatus::Running) {
+            executions.remove(idx);
+        } else {
+            break;
+        }
     }
 
     let _ = app_config.save_executions(task_id, &executions);
@@ -219,19 +237,19 @@ fn send_notification(
     let (title, body) = match status {
         ExecutionStatus::Success => (
             "CronLab".to_string(),
-            format!("✓ {} terminée", task_name),
+            format!("\u{2713} {} terminée", task_name),
         ),
         ExecutionStatus::Failed => (
             "CronLab".to_string(),
             format!(
-                "✗ {} a échoué (code {})",
+                "\u{2717} {} a échoué (code {})",
                 task_name,
                 exit_code.unwrap_or(-1)
             ),
         ),
         ExecutionStatus::Timeout => (
             "CronLab".to_string(),
-            format!("⏱ {} timeout", task_name),
+            format!("\u{23F1} {} timeout", task_name),
         ),
         _ => return,
     };
@@ -242,12 +260,4 @@ fn send_notification(
         .title(&title)
         .body(&body)
         .show();
-}
-
-fn truncate_string(s: String, max_len: usize) -> String {
-    if s.len() > max_len {
-        s[..max_len].to_string()
-    } else {
-        s
-    }
 }
