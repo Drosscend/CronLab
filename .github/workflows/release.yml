@@ -31,22 +31,25 @@ jobs:
 
       - name: Extract version
         id: version
-        shell: bash
+        shell: pwsh
         run: |
-          VERSION=$(grep -oP '"version":\s*"\K[^"]+' src-tauri/tauri.conf.json | head -1)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          $json = Get-Content src-tauri/tauri.conf.json | ConvertFrom-Json
+          $version = $json.version
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "tag=v$version" >> $env:GITHUB_OUTPUT
 
       - name: Check if release already exists
         id: check_release
-        shell: bash
+        shell: pwsh
         run: |
-          if gh release view "${{ steps.version.outputs.tag }}" &>/dev/null; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "Release ${{ steps.version.outputs.tag }} already exists, skipping."
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+          $tag = "${{ steps.version.outputs.tag }}"
+          $result = gh release view $tag 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            echo "exists=true" >> $env:GITHUB_OUTPUT
+            echo "Release $tag already exists, skipping."
+          } else {
+            echo "exists=false" >> $env:GITHUB_OUTPUT
+          }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
