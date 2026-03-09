@@ -1,50 +1,180 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import {
+  FluentProvider,
+  webDarkTheme,
+  webLightTheme,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  Text,
+  makeStyles,
+} from "@fluentui/react-components";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useTheme } from "./hooks/useTheme";
+import { useTasks } from "./hooks/useTasks";
+import { useSettings } from "./hooks/useSettings";
+import { I18nContext, translate } from "./i18n";
+import type { Language } from "./i18n";
+import type { Task, TaskInput } from "./lib/types";
+import { Header } from "./components/Header";
+import { TaskList } from "./components/TaskList";
+import { TaskForm } from "./components/TaskForm";
+import { ExecutionLog } from "./components/ExecutionLog";
+import { SettingsPanel } from "./components/SettingsPanel";
+
+const useStyles = makeStyles({
+  root: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+    overflow: "hidden",
+  },
+});
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const styles = useStyles();
+  const theme = useTheme();
+  const { tasks, create, update, remove, toggle, runNow } = useTasks();
+  const { settings, save: saveSettings } = useSettings();
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const [language, setLanguage] = useState<Language>("fr");
+  const [showForm, setShowForm] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logsTask, setLogsTask] = useState<Task | null>(null);
+  const [deleteTask, setDeleteTask] = useState<Task | null>(null);
+
+  // Sync language from settings
+  useEffect(() => {
+    if (settings) setLanguage(settings.language);
+  }, [settings]);
+
+  const t = useCallback(
+    (key: string, params?: Record<string, string | number>) =>
+      translate(language, key, params),
+    [language]
+  );
+
+  const i18nValue = useMemo(
+    () => ({ language, setLanguage, t }),
+    [language, t]
+  );
+
+  const handleNewTask = () => {
+    setEditTask(null);
+    setShowForm(true);
+  };
+
+  const handleEdit = (task: Task) => {
+    setEditTask(task);
+    setShowForm(true);
+  };
+
+  const handleSaveTask = async (input: TaskInput) => {
+    if (editTask) {
+      await update(editTask.id, input);
+    } else {
+      await create(input);
+    }
+  };
+
+  const handleDelete = (task: Task) => {
+    setDeleteTask(task);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTask) {
+      await remove(deleteTask.id);
+      setDeleteTask(null);
+    }
+  };
+
+  const handleViewLogs = (task: Task) => {
+    setLogsTask(task);
+    setShowLogs(true);
+  };
+
+  const handleSaveSettings = async (newSettings: typeof settings) => {
+    if (newSettings) {
+      await saveSettings(newSettings);
+      setLanguage(newSettings.language);
+    }
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <FluentProvider
+      theme={theme === "dark" ? webDarkTheme : webLightTheme}
+    >
+      <I18nContext.Provider value={i18nValue}>
+        <div className={styles.root}>
+          <Header
+            onNewTask={handleNewTask}
+            onOpenSettings={() => setShowSettings(true)}
+          />
+          <TaskList
+            tasks={tasks}
+            onToggle={toggle}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onViewLogs={handleViewLogs}
+            onRunNow={runNow}
+          />
+        </div>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+        <TaskForm
+          open={showForm}
+          onClose={() => setShowForm(false)}
+          onSave={handleSaveTask}
+          editTask={editTask}
+          defaultTimeout={settings?.defaultTimeoutSeconds ?? 1800}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+
+        <ExecutionLog
+          open={showLogs}
+          onClose={() => setShowLogs(false)}
+          task={logsTask}
+        />
+
+        <SettingsPanel
+          open={showSettings}
+          onClose={() => setShowSettings(false)}
+          settings={settings}
+          onSave={handleSaveSettings}
+        />
+
+        {/* Delete confirmation dialog */}
+        <Dialog
+          open={deleteTask !== null}
+          onOpenChange={(_, data) => {
+            if (!data.open) setDeleteTask(null);
+          }}
+        >
+          <DialogSurface>
+            <DialogBody>
+              <DialogTitle>{t("confirm.delete")}</DialogTitle>
+              <DialogContent>
+                <Text>{t("confirm.deleteBody")}</Text>
+              </DialogContent>
+              <DialogActions>
+                <Button
+                  appearance="secondary"
+                  onClick={() => setDeleteTask(null)}
+                >
+                  {t("confirm.no")}
+                </Button>
+                <Button appearance="primary" onClick={confirmDelete}>
+                  {t("confirm.yes")}
+                </Button>
+              </DialogActions>
+            </DialogBody>
+          </DialogSurface>
+        </Dialog>
+      </I18nContext.Provider>
+    </FluentProvider>
   );
 }
 
