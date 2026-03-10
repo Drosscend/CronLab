@@ -13,7 +13,8 @@ import {
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useSyncExternalStore } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import { useTheme } from "./hooks/useTheme";
 import { useTasks } from "./hooks/useTasks";
 import { useSettings } from "./hooks/useSettings";
@@ -43,6 +44,7 @@ function App() {
   const theme = useTheme();
   const { tasks, create, update, remove, toggle, runNow } = useTasks();
   const { settings, save: saveSettings } = useSettings();
+  const appVersion = useAppVersion();
 
   const [language, setLanguage] = useState<Language>("fr");
   const [view, setView] = useState<View>("tasks");
@@ -119,6 +121,7 @@ function App() {
             onClose={() => setView("tasks")}
             settings={settings}
             onSave={handleSaveSettings}
+            appVersion={appVersion}
           />
         ) : (
           <div className={styles.root}>
@@ -181,6 +184,23 @@ function App() {
         </Dialog>
       </I18nContext.Provider>
     </FluentProvider>
+  );
+}
+
+let cachedVersion = "";
+const versionSubscribers = new Set<() => void>();
+getVersion().then((v) => {
+  cachedVersion = v;
+  versionSubscribers.forEach((cb) => cb());
+});
+
+function useAppVersion() {
+  return useSyncExternalStore(
+    (cb) => {
+      versionSubscribers.add(cb);
+      return () => versionSubscribers.delete(cb);
+    },
+    () => cachedVersion,
   );
 }
 

@@ -16,8 +16,10 @@ import {
   ArrowDownload20Regular,
   Checkmark20Regular,
   ErrorCircle20Regular,
+  Open16Regular,
 } from "@fluentui/react-icons";
 import { useState, useEffect } from "react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import type { Settings } from "../lib/types";
 import { useI18n } from "../i18n";
 import { useUpdater } from "../hooks/useUpdater";
@@ -68,18 +70,46 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalM,
     marginTop: tokens.spacingVerticalM,
   },
-  updateSection: {
+  aboutSection: {
+    marginTop: "auto",
+    padding: `${tokens.spacingVerticalM} ${tokens.spacingHorizontalL}`,
+    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
     display: "flex",
     flexDirection: "column",
-    gap: tokens.spacingVerticalXS,
-    marginTop: tokens.spacingVerticalL,
-    padding: tokens.spacingVerticalS,
-    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+    gap: tokens.spacingVerticalS,
+  },
+  aboutHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
+  aboutName: {
+    fontSize: tokens.fontSizeBase400,
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  aboutVersion: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
+  aboutLink: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorBrandForeground1,
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    background: "none",
+    border: "none",
+    padding: 0,
+    ":hover": {
+      textDecorationLine: "underline",
+    },
   },
   updateRow: {
     display: "flex",
     alignItems: "center",
     gap: tokens.spacingHorizontalS,
+    marginTop: tokens.spacingVerticalXS,
   },
   updateStatus: {
     fontSize: tokens.fontSizeBase200,
@@ -94,11 +124,14 @@ const useStyles = makeStyles({
   },
 });
 
+const GITHUB_URL = "https://github.com/Drosscend/CronLab";
+
 interface SettingsPanelProps {
   open: boolean;
   onClose: () => void;
   settings: Settings | null;
   onSave: (settings: Settings) => void;
+  appVersion: string;
 }
 
 export function SettingsPanel({
@@ -106,6 +139,7 @@ export function SettingsPanel({
   onClose,
   settings,
   onSave,
+  appVersion,
 }: SettingsPanelProps) {
   const styles = useStyles();
   const { t } = useI18n();
@@ -219,60 +253,70 @@ export function SettingsPanel({
           />
         </div>
 
-        <div className={styles.updateSection}>
-          <div className={styles.updateRow}>
-            {status === "installing" ? (
-              <Button
-                appearance="primary"
-                size="small"
-                icon={<ArrowDownload20Regular />}
-                onClick={restartApp}
-              >
-                {t("update.restart")}
-              </Button>
-            ) : (
-              <Button
-                appearance="subtle"
-                size="small"
-                icon={<ArrowSync20Regular />}
-                onClick={checkForUpdates}
-                disabled={status === "checking" || status === "downloading"}
-              >
-                {t("update.checkNow")}
-              </Button>
-            )}
+      </div>
 
-            {status === "checking" && (
-              <Text className={styles.updateStatus}>{t("update.checking")}</Text>
-            )}
-            {status === "up-to-date" && (
-              <Text className={styles.updateStatus}>
-                <Checkmark20Regular /> {t("update.upToDate")}
-              </Text>
-            )}
-            {status === "available" && version && (
-              <Text className={styles.updateStatus}>
-                {t("update.available", { version })}
-              </Text>
-            )}
-            {status === "downloading" && (
-              <Text className={styles.updateStatus}>
-                {t("update.downloading", { progress: String(progress) })}
-              </Text>
-            )}
-            {status === "installing" && (
-              <Text className={styles.updateStatus}>{t("update.installing")}</Text>
-            )}
-            {status === "error" && (
-              <Text className={styles.updateStatus}>
-                <ErrorCircle20Regular /> {t("update.error")}: {error}
-              </Text>
-            )}
-          </div>
+      <div className={styles.aboutSection}>
+        <div className={styles.aboutHeader}>
+          <Text className={styles.aboutName}>CronLab</Text>
+          <Text className={styles.aboutVersion}>v{appVersion}</Text>
+        </div>
+
+        <button className={styles.aboutLink} onClick={() => openUrl(GITHUB_URL)}>
+          GitHub <Open16Regular />
+        </button>
+
+        <div className={styles.updateRow}>
+          {status === "installing" ? (
+            <Button
+              appearance="primary"
+              size="small"
+              icon={<ArrowDownload20Regular />}
+              onClick={restartApp}
+            >
+              {t("update.restart")}
+            </Button>
+          ) : (
+            <Button
+              appearance="subtle"
+              size="small"
+              icon={<ArrowSync20Regular />}
+              onClick={checkForUpdates}
+              disabled={status === "checking" || status === "downloading"}
+            >
+              {t("update.checkNow")}
+            </Button>
+          )}
+
+          {status === "checking" && (
+            <Text className={styles.updateStatus}>{t("update.checking")}</Text>
+          )}
+          {status === "up-to-date" && (
+            <Text className={styles.updateStatus}>
+              <Checkmark20Regular /> {t("update.upToDate")}
+            </Text>
+          )}
+          {status === "available" && version && (
+            <Text className={styles.updateStatus}>
+              {t("update.available", { version })}
+            </Text>
+          )}
           {status === "downloading" && (
-            <ProgressBar value={progress / 100} />
+            <Text className={styles.updateStatus}>
+              {t("update.downloading", { progress: String(progress) })}
+            </Text>
+          )}
+          {status === "installing" && (
+            <Text className={styles.updateStatus}>{t("update.installing")}</Text>
+          )}
+          {status === "error" && (
+            <Text className={styles.updateStatus}>
+              <ErrorCircle20Regular /> {t("update.error")}: {error}
+            </Text>
           )}
         </div>
+        {status === "downloading" && (
+          <ProgressBar value={progress / 100} />
+        )}
       </div>
 
       <div className={styles.footer}>
