@@ -128,6 +128,7 @@ function App() {
             <Header
               onNewTask={handleNewTask}
               onOpenSettings={() => setView("settings")}
+              appVersion={appVersion}
             />
             <TaskList
               tasks={tasks}

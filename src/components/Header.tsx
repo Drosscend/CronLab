@@ -1,5 +1,6 @@
 import {
   Button,
+  Text,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
@@ -19,6 +20,14 @@ const useStyles = makeStyles({
     alignItems: "center",
     gap: tokens.spacingHorizontalS,
   },
+  title: {
+    fontSize: tokens.fontSizeBase400,
+    fontWeight: tokens.fontWeightSemibold,
+  },
+  version: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
   right: {
     display: "flex",
     alignItems: "center",
@@ -29,15 +38,18 @@ const useStyles = makeStyles({
 interface HeaderProps {
   onNewTask: () => void;
   onOpenSettings: () => void;
+  appVersion: string;
 }
 
-export function Header({ onNewTask, onOpenSettings }: HeaderProps) {
+export function Header({ onNewTask, onOpenSettings, appVersion }: HeaderProps) {
   const styles = useStyles();
   const { t } = useI18n();
 
   return (
     <div className={styles.header}>
       <div className={styles.left}>
+        <Text className={styles.title}>CronLab</Text>
+        {appVersion && <Text className={styles.version}>v{appVersion}</Text>}
         <Button
           appearance="outline"
           icon={<Add20Regular />}
