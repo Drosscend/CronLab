@@ -10,7 +10,7 @@ BUMP_TYPE=${1:-patch}
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Read current version from tauri.conf.json
-CURRENT=$(grep -oP '"version":\s*"\K[^"]+' "$ROOT_DIR/src-tauri/tauri.conf.json" | head -1)
+CURRENT=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$ROOT_DIR/src-tauri/tauri.conf.json" | head -1)
 IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
 case $BUMP_TYPE in
