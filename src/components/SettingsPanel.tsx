@@ -3,16 +3,24 @@ import {
   Dropdown,
   Label,
   Option,
+  ProgressBar,
   SpinButton,
   Switch,
   Text,
   makeStyles,
   tokens,
 } from "@fluentui/react-components";
-import { ArrowLeft20Regular } from "@fluentui/react-icons";
+import {
+  ArrowLeft20Regular,
+  ArrowSync20Regular,
+  ArrowDownload20Regular,
+  Checkmark20Regular,
+  ErrorCircle20Regular,
+} from "@fluentui/react-icons";
 import { useState, useEffect } from "react";
 import type { Settings } from "../lib/types";
 import { useI18n } from "../i18n";
+import { useUpdater } from "../hooks/useUpdater";
 
 const useStyles = makeStyles({
   root: {
@@ -60,6 +68,23 @@ const useStyles = makeStyles({
     marginBottom: tokens.spacingVerticalM,
     marginTop: tokens.spacingVerticalM,
   },
+  updateSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: tokens.spacingVerticalXS,
+    marginTop: tokens.spacingVerticalL,
+    padding: tokens.spacingVerticalS,
+    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
+  updateRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: tokens.spacingHorizontalS,
+  },
+  updateStatus: {
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground3,
+  },
   footer: {
     display: "flex",
     justifyContent: "flex-end",
@@ -84,6 +109,7 @@ export function SettingsPanel({
 }: SettingsPanelProps) {
   const styles = useStyles();
   const { t } = useI18n();
+  const { status, version, progress, error, checkForUpdates, restartApp } = useUpdater();
 
   const [language, setLanguage] = useState<"fr" | "en">("fr");
   const [launchAtStartup, setLaunchAtStartup] = useState(true);
@@ -191,6 +217,61 @@ export function SettingsPanel({
               }
             }}
           />
+        </div>
+
+        <div className={styles.updateSection}>
+          <div className={styles.updateRow}>
+            {status === "installing" ? (
+              <Button
+                appearance="primary"
+                size="small"
+                icon={<ArrowDownload20Regular />}
+                onClick={restartApp}
+              >
+                {t("update.restart")}
+              </Button>
+            ) : (
+              <Button
+                appearance="subtle"
+                size="small"
+                icon={<ArrowSync20Regular />}
+                onClick={checkForUpdates}
+                disabled={status === "checking" || status === "downloading"}
+              >
+                {t("update.checkNow")}
+              </Button>
+            )}
+
+            {status === "checking" && (
+              <Text className={styles.updateStatus}>{t("update.checking")}</Text>
+            )}
+            {status === "up-to-date" && (
+              <Text className={styles.updateStatus}>
+                <Checkmark20Regular /> {t("update.upToDate")}
+              </Text>
+            )}
+            {status === "available" && version && (
+              <Text className={styles.updateStatus}>
+                {t("update.available", { version })}
+              </Text>
+            )}
+            {status === "downloading" && (
+              <Text className={styles.updateStatus}>
+                {t("update.downloading", { progress: String(progress) })}
+              </Text>
+            )}
+            {status === "installing" && (
+              <Text className={styles.updateStatus}>{t("update.installing")}</Text>
+            )}
+            {status === "error" && (
+              <Text className={styles.updateStatus}>
+                <ErrorCircle20Regular /> {t("update.error")}: {error}
+              </Text>
+            )}
+          </div>
+          {status === "downloading" && (
+            <ProgressBar value={progress / 100} />
+          )}
         </div>
       </div>
 

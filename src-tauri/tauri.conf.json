@@ -26,7 +26,15 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src ipc: http://ipc.localhost"
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src ipc: http://ipc.localhost https://github.com https://objects.githubusercontent.com"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEUyQkFBMjY0MkJBQjYwOUQKUldTZFlLc3JaS0s2NHNQSmI0elRGaEZCaUsrd3RPcW9FRXU4cDFrTzRZMFRxM1VaU3NNVW9Ld1oK",
+      "endpoints": [
+        "https://github.com/Drosscend/CronLab/releases/latest/download/latest.json"
+      ]
     }
   },
   "bundle": {

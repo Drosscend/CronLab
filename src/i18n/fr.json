@@ -73,5 +73,13 @@
   "log.stderr": "Erreur standard",
   "log.empty": "Aucune exécution enregistrée.",
   "log.emptyOutput": "(aucune sortie)",
-  "log.close": "Fermer"
+  "log.close": "Fermer",
+  "update.checking": "Recherche de mises à jour...",
+  "update.available": "Mise à jour disponible : v{version}",
+  "update.downloading": "Téléchargement en cours... {progress}%",
+  "update.installing": "Installation en cours...",
+  "update.upToDate": "Vous êtes à jour",
+  "update.error": "Erreur lors de la mise à jour",
+  "update.checkNow": "Vérifier les mises à jour",
+  "update.restart": "Redémarrer pour mettre à jour"
 }

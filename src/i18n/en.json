@@ -73,5 +73,13 @@
   "log.stderr": "Standard error",
   "log.empty": "No executions recorded.",
   "log.emptyOutput": "(no output)",
-  "log.close": "Close"
+  "log.close": "Close",
+  "update.checking": "Checking for updates...",
+  "update.available": "Update available: v{version}",
+  "update.downloading": "Downloading... {progress}%",
+  "update.installing": "Installing...",
+  "update.upToDate": "You're up to date",
+  "update.error": "Update error",
+  "update.checkNow": "Check for updates",
+  "update.restart": "Restart to update"
 }
