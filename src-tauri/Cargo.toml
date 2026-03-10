@@ -1,6 +1,6 @@
 [package]
 name = "cronlab"
-version = "0.1.2"
+version = "0.1.3"
 description = "CronLab - Task Scheduler"
 authors = ["Drosscend"]
 edition = "2021"
