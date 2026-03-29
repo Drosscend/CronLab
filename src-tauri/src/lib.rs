@@ -134,6 +134,13 @@ pub fn run() {
                 });
             }
 
+            // Sync autostart with OS registry
+            let launch_at_startup = {
+                let config = app_config_for_setup.config.lock().unwrap();
+                config.settings.launch_at_startup
+            };
+            commands::sync_autostart(app.handle(), launch_at_startup);
+
             // Start scheduler
             start_scheduler(
                 app.handle().clone(),

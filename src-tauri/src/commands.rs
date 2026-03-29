@@ -214,13 +214,29 @@ pub fn get_settings(
 
 #[tauri::command]
 pub fn update_settings(
+    app_handle: tauri::AppHandle,
     app_config: State<'_, Arc<AppConfig>>,
     settings: Settings,
 ) -> Result<(), String> {
+    let launch_at_startup = settings.launch_at_startup;
     {
         let mut config = app_config.config.lock().map_err(|e| e.to_string())?;
         config.settings = settings;
     }
     app_config.save()?;
+
+    sync_autostart(&app_handle, launch_at_startup);
+
     Ok(())
+}
+
+/// Enable or disable the OS-level autostart entry via the Tauri plugin.
+pub fn sync_autostart(app_handle: &tauri::AppHandle, enable: bool) {
+    use tauri_plugin_autostart::ManagerExt;
+    let manager = app_handle.autolaunch();
+    if enable {
+        let _ = manager.enable();
+    } else {
+        let _ = manager.disable();
+    }
 }

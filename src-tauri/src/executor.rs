@@ -77,13 +77,17 @@ pub fn execute_task(
         let program = parts[0];
         let args = &parts[1..];
 
-        let child_result = Command::new(program)
-            .args(args)
+        let mut cmd = Command::new(program);
+        cmd.args(args)
             .current_dir(&working_directory)
             .envs(&env_vars)
             .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn();
+            .stderr(Stdio::piped());
+
+        #[cfg(target_os = "windows")]
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+
+        let child_result = cmd.spawn();
 
         let mut child = match child_result {
             Ok(c) => c,
