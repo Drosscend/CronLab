@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["react", "react-dom", "uuid"],
+    "types": ["react", "react-dom"],
 
     /* Linting */
     "strict": true,
