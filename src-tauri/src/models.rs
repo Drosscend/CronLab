@@ -104,6 +104,11 @@ pub enum ExecutionStatus {
     Timeout,
 }
 
+/// Serde fallback for boolean settings added after the initial schema.
+fn default_true() -> bool {
+    true
+}
+
 /// Application-wide settings persisted in `config.json`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -114,6 +119,9 @@ pub struct Settings {
     pub launch_at_startup: bool,
     /// Hide the window to the system tray instead of quitting on close.
     pub close_to_tray: bool,
+    /// Stay hidden in the system tray when launched by the OS autostart entry.
+    #[serde(default = "default_true")]
+    pub start_minimized: bool,
     /// Fallback timeout in seconds for tasks that don't define their own.
     pub default_timeout_seconds: u64,
     /// Maximum number of finished execution records kept per task.
@@ -128,6 +136,7 @@ impl Default for Settings {
             language: "fr".to_string(),
             launch_at_startup: true,
             close_to_tray: true,
+            start_minimized: true,
             default_timeout_seconds: 1800,
             max_log_retention: 10,
             notifications: true,

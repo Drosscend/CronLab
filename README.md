@@ -12,7 +12,7 @@ A desktop CLI task scheduler for Windows 11 with system tray, native notificatio
 - Execution history with captured stdout/stderr (last 10 runs by default)
 - Native Windows notifications on task completion, failure, or timeout
 - System tray with close-to-tray behavior
-- Auto-start with Windows
+- Auto-start with Windows, minimized to the tray by default
 - Bilingual interface (French / English)
 - Human-editable JSON configuration for easy import/export
 

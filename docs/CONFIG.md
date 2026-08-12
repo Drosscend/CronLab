@@ -21,6 +21,7 @@ Both files are human-readable JSON. The directories are created automatically on
   "settings": {
     "language": "fr",
     "launchAtStartup": true,
+    "startMinimized": true,
     "closeToTray": true,
     "defaultTimeoutSeconds": 1800,
     "maxLogRetention": 10,
@@ -85,6 +86,7 @@ Both files are human-readable JSON. The directories are created automatically on
 |-------|------|---------|-------------|
 | `language` | `"fr"` \| `"en"` | `"fr"` | UI language |
 | `launchAtStartup` | boolean | `true` | Register the app to auto-start with the OS |
+| `startMinimized` | boolean | `true` | When launched by the OS autostart entry, stay in the system tray without opening the window |
 | `closeToTray` | boolean | `true` | Closing the window hides it to the system tray instead of quitting |
 | `defaultTimeoutSeconds` | number | `1800` | Fallback timeout (30 min) for tasks that don't set their own |
 | `maxLogRetention` | number | `10` | Max finished execution records kept per task |

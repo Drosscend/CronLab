@@ -14,6 +14,10 @@ use tauri::{
     Manager, WindowEvent,
 };
 
+/// Flag added to the OS autostart entry so the app can tell an automatic
+/// launch apart from a manual one.
+const AUTOSTART_ARG: &str = "--autostart";
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_config = Arc::new(AppConfig::new());
@@ -26,7 +30,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(
+            tauri_plugin_autostart::Builder::new()
+                .args([AUTOSTART_ARG])
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -135,11 +143,21 @@ pub fn run() {
             }
 
             // Sync autostart with OS registry
-            let launch_at_startup = {
+            let (launch_at_startup, start_minimized) = {
                 let config = app_config_for_setup.config.lock().unwrap();
-                config.settings.launch_at_startup
+                (config.settings.launch_at_startup, config.settings.start_minimized)
             };
             commands::sync_autostart(app.handle(), launch_at_startup);
+
+            // The window starts hidden: reveal it unless this is an automatic
+            // launch that should stay in the tray.
+            let launched_by_autostart = std::env::args().any(|arg| arg == AUTOSTART_ARG);
+            if !(launched_by_autostart && start_minimized) {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
 
             // Start scheduler
             start_scheduler(

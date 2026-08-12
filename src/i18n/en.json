@@ -46,6 +46,7 @@
   "settings.title": "Settings",
   "settings.language": "Language",
   "settings.startup": "Launch at startup",
+  "settings.startMinimized": "Start minimized to tray",
   "settings.tray": "Minimize to tray",
   "settings.notifications": "Notifications",
   "settings.defaultTimeout": "Default timeout (s)",

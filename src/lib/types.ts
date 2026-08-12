@@ -72,6 +72,8 @@ export interface Settings {
   launchAtStartup: boolean;
   /** Hide to system tray instead of quitting on close. */
   closeToTray: boolean;
+  /** Stay hidden in the system tray when launched automatically by the OS. */
+  startMinimized: boolean;
   /** Fallback timeout in seconds for tasks without a custom timeout. */
   defaultTimeoutSeconds: number;
   /** Maximum number of finished execution records kept per task. */

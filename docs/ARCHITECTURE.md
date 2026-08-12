@@ -46,7 +46,7 @@ Spawns a new OS thread per task execution. The child process is monitored via `t
 Reserved module. Notifications are currently handled inline in `executor.rs` via `tauri_plugin_notification`.
 
 ### `lib.rs`
-Application entry point. Initializes Tauri with plugins (opener, notification, autostart, dialog), registers all command handlers, sets up the system tray with a context menu, implements close-to-tray behavior, and starts the scheduler thread.
+Application entry point. Initializes Tauri with plugins (opener, notification, autostart, dialog), registers all command handlers, sets up the system tray with a context menu, implements close-to-tray behavior, decides whether to reveal the window (hidden when launched with `--autostart` and `startMinimized` is on), and starts the scheduler thread.
 
 ## Frontend (React + TypeScript)
 

@@ -147,6 +147,7 @@ export function SettingsPanel({
 
   const [language, setLanguage] = useState<"fr" | "en">("fr");
   const [launchAtStartup, setLaunchAtStartup] = useState(true);
+  const [startMinimized, setStartMinimized] = useState(true);
   const [closeToTray, setCloseToTray] = useState(true);
   const [notifications, setNotifications] = useState(true);
   const [defaultTimeout, setDefaultTimeout] = useState(1800);
@@ -156,6 +157,7 @@ export function SettingsPanel({
     if (settings) {
       setLanguage(settings.language);
       setLaunchAtStartup(settings.launchAtStartup);
+      setStartMinimized(settings.startMinimized);
       setCloseToTray(settings.closeToTray);
       setNotifications(settings.notifications);
       setDefaultTimeout(settings.defaultTimeoutSeconds);
@@ -167,6 +169,7 @@ export function SettingsPanel({
     onSave({
       language,
       launchAtStartup,
+      startMinimized,
       closeToTray,
       notifications,
       defaultTimeoutSeconds: defaultTimeout,
@@ -207,6 +210,15 @@ export function SettingsPanel({
           <Switch
             checked={launchAtStartup}
             onChange={(_, data) => setLaunchAtStartup(data.checked)}
+          />
+        </div>
+
+        <div className={styles.switchRow}>
+          <Text className={styles.switchLabel}>{t("settings.startMinimized")}</Text>
+          <Switch
+            checked={startMinimized}
+            disabled={!launchAtStartup}
+            onChange={(_, data) => setStartMinimized(data.checked)}
           />
         </div>
 
