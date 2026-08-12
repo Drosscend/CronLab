@@ -11,6 +11,29 @@ export type UpdateStatus =
   | "up-to-date"
   | "error";
 
+const CHECK_ATTEMPTS = 8;
+const CHECK_RETRY_DELAY_MS = 1000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// GitHub connections drop often enough that a single attempt regularly fails.
+async function checkWithRetry(): Promise<Update | null> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= CHECK_ATTEMPTS; attempt++) {
+    try {
+      return await check();
+    } catch (e) {
+      lastError = e;
+      if (attempt < CHECK_ATTEMPTS) {
+        await sleep(CHECK_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 interface UpdaterState {
   status: UpdateStatus;
   version: string | null;
@@ -31,7 +54,7 @@ export function useUpdater() {
 
     let update: Update | null = null;
     try {
-      update = await check();
+      update = await checkWithRetry();
     } catch (e) {
       setState({
         status: "error",
