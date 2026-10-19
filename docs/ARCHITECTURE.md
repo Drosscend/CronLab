@@ -37,7 +37,7 @@ Manages the `~/.cronlab/` directory. `AppConfig` wraps the `Config` struct in a 
 Ten `#[tauri::command]` handlers that form the IPC API. Each handler acquires a lock on `AppConfig`, performs CRUD or query operations, and persists changes to disk. This is the only module the frontend communicates with directly.
 
 ### `scheduler.rs`
-Background polling loop that runs every 30 seconds in a dedicated thread. For each enabled task, it computes the next run time (`compute_next_run`) and triggers execution if the time has passed. Uses `SchedulerState` (a `Mutex<HashMap>`) to deduplicate triggers within the same scheduling slot.
+Background polling loop that runs every 30 seconds in a dedicated thread. For each enabled task, it finds the latest scheduled slot of the last five minutes (`compute_triggerable_slot`) and triggers execution. Uses `SchedulerState` (a `Mutex<HashMap>`) to deduplicate triggers within the same scheduling slot.
 
 ### `executor.rs`
 Spawns a new OS thread per task execution. The child process is monitored via `try_wait()` every 500 ms. Captures stdout/stderr (capped at 10 KB), enforces a timeout (kills the process if exceeded), persists execution records to the log file, and sends a desktop notification on completion.
@@ -87,7 +87,7 @@ Application entry point. Initializes Tauri with plugins (opener, notification, a
 
 1. **Creation**: User fills `TaskForm` → `createTask()` invoke → `commands::create_task` generates UUID + timestamps, appends to config, saves to disk.
 2. **Storage**: Task is written to `~/.cronlab/config.json` as part of the `tasks` array.
-3. **Scheduling**: Every 30 seconds, `scheduler.rs` reads all tasks, calls `compute_next_run()` for each enabled task, and compares with the current time.
+3. **Scheduling**: Every 30 seconds, `scheduler.rs` reads all tasks, calls `compute_triggerable_slot()` for each enabled task, and triggers the slot it returns.
 4. **Execution**: When a task is due (or manually triggered via "Run now"), `execute_task()` spawns an OS thread → spawns a child process → polls `try_wait()` every 500 ms.
 5. **Logging**: A "running" execution record is created immediately. On completion, it is updated with exit code, stdout, stderr, and final status. Old records are pruned per `maxLogRetention`.
 6. **Notification**: On completion, a native OS notification is sent (if enabled) with the task name and result.

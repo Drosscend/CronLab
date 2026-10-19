@@ -152,12 +152,12 @@ fn compute_triggerable_slot(
         ScheduleType::CustomCron => {
             let expr = schedule.cron_expression.as_deref()?;
             let cron_schedule = CronSchedule::from_str(expr).ok()?;
-            let next = cron_schedule.upcoming(now.timezone()).next()?;
-            if next <= *now {
-                Some(next)
-            } else {
-                None
-            }
+            let window_start = *now - chrono::Duration::seconds(TRIGGER_WINDOW_SECS);
+
+            cron_schedule
+                .after(&window_start)
+                .take_while(|slot| slot <= now)
+                .last()
         }
     }
 }
@@ -230,5 +230,37 @@ pub fn compute_next_run(schedule: &crate::models::Schedule) -> Option<String> {
             let next = cron_schedule.upcoming(Local).next()?;
             Some(next.to_rfc3339())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Schedule;
+
+    fn cron(expression: &str) -> Schedule {
+        Schedule {
+            schedule_type: ScheduleType::CustomCron,
+            time: None,
+            days_of_week: None,
+            interval_minutes: None,
+            cron_expression: Some(expression.to_string()),
+        }
+    }
+
+    fn at(hour: u32, minute: u32, second: u32) -> DateTime<Local> {
+        Local.with_ymd_and_hms(2026, 3, 10, hour, minute, second).unwrap()
+    }
+
+    #[test]
+    fn custom_cron_triggers_the_latest_slot_of_the_window() {
+        let slot = compute_triggerable_slot(&cron("0 * * * * *"), &at(12, 4, 30));
+        assert_eq!(slot, Some(at(12, 4, 0)));
+    }
+
+    #[test]
+    fn custom_cron_skips_a_slot_older_than_the_window() {
+        let slot = compute_triggerable_slot(&cron("0 0 12 * * *"), &at(12, 6, 0));
+        assert_eq!(slot, None);
     }
 }
