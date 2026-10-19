@@ -40,7 +40,7 @@ Ten `#[tauri::command]` handlers that form the IPC API. Each handler acquires a 
 Background polling loop that runs every 30 seconds in a dedicated thread. For each enabled task, it finds the latest scheduled slot of the last five minutes (`compute_triggerable_slot`) and triggers execution. Uses `SchedulerState` (a `Mutex<HashMap>`) to deduplicate triggers within the same scheduling slot.
 
 ### `executor.rs`
-Spawns a new OS thread per task execution. The child process is monitored via `try_wait()` every 500 ms. Captures stdout/stderr (capped at 10 KB), enforces a timeout (kills the process if exceeded), persists execution records to the log file, and sends a desktop notification on completion.
+Spawns a new OS thread per task execution. The child process is monitored via `try_wait()` every 500 ms while one reader thread per pipe drains stdout and stderr, keeping the first 10 KB of each. Enforces a timeout (kills the process if exceeded), persists execution records to the log file, and sends a desktop notification on completion.
 
 ### `notifications.rs`
 Reserved module. Notifications are currently handled inline in `executor.rs` via `tauri_plugin_notification`.
@@ -100,6 +100,8 @@ CronLab runs three categories of threads:
 1. **Main thread** — Tauri event loop, window management, tray icon.
 2. **Scheduler thread** — Single long-lived thread, sleeps 30 s between ticks.
 3. **Executor threads** — One short-lived thread per task execution, spawned on demand.
+
+Each execution also starts two reader threads, one per output pipe, which end with the process.
 
 All threads share `Arc<AppConfig>` which wraps the config in a `Mutex<Config>`. Lock contention is low because:
 - The scheduler clones the task list immediately after acquiring the lock, then releases it.
