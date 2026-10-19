@@ -64,7 +64,7 @@ Example task entry:
 ```json
 {
   "name": "Daily DB backup",
-  "command": "pg_dump -U postgres mydb > backup.sql",
+  "command": "pg_dump -U postgres -f backup.sql mydb",
   "workingDirectory": "C:\\Backups\\db",
   "schedule": { "type": "daily", "time": "03:00" },
   "enabled": true,

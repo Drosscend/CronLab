@@ -31,7 +31,7 @@ Both files are human-readable JSON. The directories are created automatically on
     {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "name": "Daily DB backup",
-      "command": "pg_dump -U postgres mydb > backup.sql",
+      "command": "pg_dump -U postgres -f backup.sql mydb",
       "workingDirectory": "C:\\Backups\\db",
       "schedule": {
         "type": "daily",
@@ -98,7 +98,7 @@ Both files are human-readable JSON. The directories are created automatically on
 |-------|------|-------------|
 | `id` | string | UUID v4, auto-generated |
 | `name` | string | Human-readable label |
-| `command` | string | Shell command, split by whitespace at runtime |
+| `command` | string | Program and arguments, split by whitespace at runtime and run without a shell. Start it with `cmd /C` to use `>`, `\|` or `&&`. Quotes and paths with spaces are not supported |
 | `workingDirectory` | string | Absolute path used as the process CWD |
 | `schedule` | object | See [Schedule](#schedule) below |
 | `enabled` | boolean | Whether the scheduler evaluates this task |

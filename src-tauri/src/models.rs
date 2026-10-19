@@ -13,7 +13,7 @@ pub struct Task {
     pub id: String,
     /// Human-readable task name, displayed in the UI.
     pub name: String,
-    /// Shell command to execute, split by whitespace at runtime.
+    /// Program and arguments to run, split by whitespace at runtime and run without a shell.
     pub command: String,
     /// Absolute path used as the process working directory.
     pub working_directory: String,
